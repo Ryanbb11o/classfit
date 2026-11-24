@@ -46,14 +46,14 @@ window.fmtDate = function (iso) {
 
 // Password rules shown live under a password field. Must match passwordProblem() in server.js.
 window.PW_RULES = {
-  bg: ["Поне 10 символа", "Главна и малка буква", "Поне една цифра", "Да не съдържа имейла ти"],
-  en: ["At least 10 characters", "Upper and lower case letter", "At least one digit", "Doesn't contain your email"],
+  bg: ["Поне 10 символа", "Главна и малка латинска буква (A-z)", "Поне една цифра", "Да не съдържа имейла ти"],
+  en: ["At least 10 characters", "Upper and lower case Latin letter (A-z)", "At least one digit", "Doesn't contain your email"],
 };
 window.checkPassword = function (pw, email = "") {
   const local = (email.split("@")[0] || "").toLowerCase();
   return [
     pw.length >= 10,
-    /[a-zа-я]/.test(pw) && /[A-ZА-Я]/.test(pw),
+    /[a-z]/.test(pw) && /[A-Z]/.test(pw),
     /\d/.test(pw),
     !(local.length >= 4 && pw.toLowerCase().includes(local)),
   ];

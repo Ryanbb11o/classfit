@@ -278,7 +278,12 @@ $("pin-form").onsubmit = async e => {
   e.preventDefault();
   const r = await api("POST", "/api/desk/login", { pin: e.target.pin.value });
   e.target.reset();
-  if (r.ok) { $("pin-err").textContent = ""; showDesk(); }
+  if (r.ok) {
+    $("pin-err").textContent = "";
+    const next = new URLSearchParams(location.search).get("next");
+    if (next === "trainer.html") { location.href = next; return; } // came from the trainer page
+    showDesk();
+  }
   else $("pin-err").textContent = t(r.data?.error || "bad_pin");
 };
 

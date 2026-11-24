@@ -44,11 +44,16 @@ Then open:
 
 ## Front desk and trainer access
 
-**For now the front desk and trainer pages are open to everyone** (no PIN), so anyone with the link can see all member details and change subscriptions. Lock them before going live by adding a PIN to `.env`:
+The front desk and trainer pages need the employee PIN, set in `.env`:
 
 ```
-STAFF_PIN=your-pin
+STAFF_PIN=123456
 ```
+
+- Staff enter it once on a device; it stays valid for 12 hours. Opening the trainer page asks for the PIN and then returns there.
+- After 5 wrong tries the PIN is blocked for 5 minutes for that device.
+- To change it, edit `STAFF_PIN` in `.env` and restart the server.
+- Without `STAFF_PIN`, the pages are open to everyone, and the server prints a warning.
 
 ## Passwords and email
 

@@ -273,7 +273,7 @@ const T = {
     addr:"ул. „Студентска“ 1а, кв. Левски, 9010 Варна",
     err_bad_login:"Грешен имейл или парола.", err_email_taken:"Вече има профил с този имейл.",
     err_weak_password:"Паролата не отговаря на изискванията.", err_invalid_fields:"Провери полетата.",
-    err_bad_current:"Сегашната парола е грешна.", err_rate:"Твърде много опити. Изчакай малко и опитай пак.", err_network:"Няма връзка със сървъра. Опитай пак."
+    err_bad_current:"Сегашната парола е грешна.", err_rate:"Твърде много опити. Изчакай малко и опитай пак.", err_no_server:"Сайтът не е свързан. Отвори го през http://localhost:3000 (сървърът трябва да е пуснат).", err_network:"Няма връзка със сървъра. Опитай пак."
   },
   en: {
     eyebrow:"Your account", guest_title:"Hello, guest.",
@@ -306,7 +306,7 @@ const T = {
     addr:"1a Studentska St, Levski, 9010 Varna",
     err_bad_login:"Wrong email or password.", err_email_taken:"An account with this email already exists.",
     err_weak_password:"Password doesn't meet the rules.", err_invalid_fields:"Check the fields.",
-    err_bad_current:"Current password is wrong.", err_rate:"Too many tries. Wait a bit and try again.", err_network:"Can't reach the server. Try again."
+    err_bad_current:"Current password is wrong.", err_rate:"Too many tries. Wait a bit and try again.", err_no_server:"The site isn't connected. Open it at http://localhost:3000 (the server must be running).", err_network:"Can't reach the server. Try again."
   }
 };
 const HOURS = ["07:00 – 21:00","07:00 – 21:00","07:00 – 21:00","07:00 – 21:00","07:00 – 21:00","08:00 – 21:00","08:00 – 21:00"];
@@ -425,6 +425,7 @@ wire("details", "/api/me/update", async (f, data, ok) => { me = data; f.querySel
 // ---- Logins (Supabase Auth) ----
 // Turn Supabase error messages into this page's messages.
 function authError(e) {
+  if (!window.sb) return "err_no_server";
   const m = String(e?.message || e || "").toLowerCase();
   if (m.includes("bad_current")) return "err_bad_current";
   if (m.includes("invalid login")) return "err_bad_login";
@@ -506,7 +507,7 @@ fetch("/api/offer").then(r => r.json()).then(o => {
 if (location.hash === "#register") document.querySelector('.tabs button[data-tab="register"]').click();
 
 initLang(T, () => { render(); renderOfferLine(); });
-sb.auth.onAuthStateChange(ev => { if (ev === "SIGNED_OUT" || ev === "TOKEN_REFRESHED") load(); });
+if (window.sb) sb.auth.onAuthStateChange(ev => { if (ev === "SIGNED_OUT" || ev === "TOKEN_REFRESHED") load(); });
 load();
 </script>
 </body>

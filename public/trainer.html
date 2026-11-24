@@ -328,7 +328,7 @@ initLang(T, () => { render(); renderList(); });
 api("GET", "/api/desk/me").then(r => {
   $("open-warn").classList.toggle("hidden", !r.data?.open);
   if (r.ok) loadList();
-  else location.href = "desk.html"; // staff log in on the front desk page
+  else location.href = "desk.html?next=trainer.html"; // staff enter the PIN on the front desk page
 });
 </script>
 </body>
