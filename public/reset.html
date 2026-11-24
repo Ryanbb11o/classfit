@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
 <script src="i18n.js"></script>
 </head>
 <body>
@@ -78,17 +80,25 @@ const T = {
   }
 };
 const $ = id => document.getElementById(id);
-const token = new URLSearchParams(location.search).get("token");
+// Supabase sends people back here from the reset email with a recovery login in the URL.
+const hash = new URLSearchParams(location.hash.slice(1));
+const fromEmail = hash.get("type") === "recovery";
+const linkError = hash.get("error_code") || hash.get("error");
 initLang(T);
 
-if (token) { $("ask").classList.add("hidden"); $("set").classList.remove("hidden"); }
+function show(id) { for (const x of ["ask", "set", "done"]) $(x).classList.toggle("hidden", x !== id); }
+if (fromEmail) show("set");
+if (linkError) { show("ask"); $("ask-sent").textContent = t("err_bad_token"); $("ask-sent").classList.remove("hidden"); }
+sb.auth.onAuthStateChange(ev => { if (ev === "PASSWORD_RECOVERY") show("set"); });
+
 const pwOk = attachPwRules($("set-form").password, $("rules"));
 
 $("ask-form").onsubmit = async e => {
   e.preventDefault();
   const btn = e.target.querySelector("button");
   btn.disabled = true;
-  try { await api("POST", "/api/password/forgot", { email: e.target.email.value }); } catch {}
+  // Same answer whether or not the account exists.
+  try { await sb.auth.resetPasswordForEmail(e.target.email.value.trim(), { redirectTo: location.origin + "/reset.html" }); } catch {}
   $("ask-sent").textContent = t("sent");
   $("ask-sent").classList.remove("hidden");
   btn.disabled = false;
@@ -100,11 +110,15 @@ $("set-form").onsubmit = async e => {
   err.textContent = "";
   if (!pwOk()) return err.textContent = t("err_weak_password");
   if (f.password.value !== f.repeat.value) return err.textContent = t("err_mismatch");
-  try {
-    const r = await api("POST", "/api/password/reset", { token, password: f.password.value });
-    if (r.ok) { $("set").classList.add("hidden"); $("done").classList.remove("hidden"); history.replaceState(null, "", "reset.html"); refreshNavProfile(); }
-    else err.textContent = t("err_" + (r.data?.error || "bad_token"));
-  } catch { err.textContent = t("err_network"); }
+  const { data } = await sb.auth.getSession();
+  if (!data.session) return err.textContent = t("err_bad_token");
+  const { error } = await sb.auth.updateUser({ password: f.password.value });
+  if (error) return err.textContent = t(String(error.message).toLowerCase().includes("password") ? "err_weak_password" : "err_network");
+  // New password set: log out everywhere, including here, then ask to log in again.
+  await sb.auth.signOut({ scope: "global" });
+  history.replaceState(null, "", "reset.html");
+  show("done");
+  refreshNavProfile();
 };
 </script>
 </body>

@@ -10,6 +10,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
 <script src="i18n.js"></script>
 <script src="scanner.js"></script>
 <style>
@@ -167,7 +169,8 @@ const T = {
     list_title:"Всички клиенти", search_ph:"Търси по име или номер", no_match:"Няма намерени.",
     empty:"Сканирай QR код или избери клиент от списъка.",
     active:"Активен абонамент", inactive:"Няма абонамент",
-    mark:"Отбележи посещение", marked:"✓ Посещението е отбелязано", mark_again:"Отбележи още едно посещение",
+    mark:"Отбележи посещение", marked:"✓ Посещението е отбелязано",
+    free_avail:"Безплатно посещение", mark_free:"Отбележи безплатното посещение", marked_free:"✓ Безплатното посещение е използвано", mark_again:"Отбележи още едно посещение",
     already:"Вече е отбелязан днес в {time} ({src}).",
     src_desk:"рецепция", src_trainer:"треньор",
     st_month:"Този месец", st_total:"Общо", st_until:"Абонамент до",
@@ -184,7 +187,8 @@ const T = {
     list_title:"All members", search_ph:"Search by name or number", no_match:"Nothing found.",
     empty:"Scan a QR code or pick a member from the list.",
     active:"Active subscription", inactive:"No subscription",
-    mark:"Mark visit", marked:"✓ Visit marked", mark_again:"Mark another visit",
+    mark:"Mark visit", marked:"✓ Visit marked",
+    free_avail:"Free visit", mark_free:"Mark the free visit", marked_free:"✓ Free visit used", mark_again:"Mark another visit",
     already:"Already marked today at {time} ({src}).",
     src_desk:"front desk", src_trainer:"trainer",
     st_month:"This month", st_total:"Total", st_until:"Subscription until",
@@ -237,7 +241,7 @@ async function open(code, fromScan) {
   const r = await api("POST", "/api/staff/lookup", { code });
   if (!r.ok) { $("code-err").textContent = t("not_found"); if (fromScan) beep(false); return; }
   cur = r.data; justMarked = false;
-  if (fromScan) beep(cur.active);
+  if (fromScan) beep(cur.active || cur.trial?.open);
   render(true);
   renderList();
 }
@@ -251,8 +255,9 @@ function render(fresh) {
 
   $("m-avatar").textContent = initials(cur.name);
   $("m-name").textContent = cur.name;
-  $("m-status").className = "status-pill " + (cur.active ? "ok" : "no");
-  $("m-status").textContent = cur.active ? t("active") : t("inactive");
+  const trialOpen = !cur.active && cur.trial?.open;
+  $("m-status").className = "status-pill " + (cur.active ? "ok" : trialOpen ? "free" : "no");
+  $("m-status").textContent = cur.active ? t("active") : trialOpen ? "🎁 " + t("free_avail") : t("inactive");
   $("m-no").textContent = `${cur.member_no} · ${cur.phone}`;
   $("m-month").textContent = cur.visits_month;
   $("m-total").textContent = cur.visits_total;
@@ -265,7 +270,7 @@ function render(fresh) {
     note.classList.remove("hidden");
   } else note.classList.add("hidden");
   btn.className = "btn" + (justMarked ? " done" : v ? " ghost" : "");
-  btn.textContent = justMarked ? t("marked") : v ? t("mark_again") : t("mark");
+  btn.textContent = justMarked ? t(cur.free_visit ? "marked_free" : "marked") : v ? t("mark_again") : trialOpen ? t("mark_free") : t("mark");
 
   const f = $("edit");
   if (fresh || document.activeElement?.form !== f) {
@@ -275,7 +280,7 @@ function render(fresh) {
 
   $("visits").innerHTML = cur.visits.length ? cur.visits.map(x => `
     <li><span>${esc(when(x.at, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }))}</span>
-      <span class="tag-src ${x.source === "trainer" ? "trainer" : ""}">${x.source === "trainer" ? esc(t("src_trainer") + (x.staff ? " · " + x.staff : "")) : t("src_desk")}</span></li>`).join("")
+      <span class="tag-src ${x.source === "trainer" ? "trainer" : ""}">${(x.free ? "🎁 " : "") + (x.source === "trainer" ? esc(t("src_trainer") + (x.staff ? " · " + x.staff : "")) : t("src_desk"))}</span></li>`).join("")
     : `<li class="hint">${t("no_visits")}</li>`;
 }
 

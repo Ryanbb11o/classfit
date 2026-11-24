@@ -9,6 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
 <script src="i18n.js"></script>
 <style>
   .stack { display: grid; gap: 20px; align-content: start; }
@@ -97,6 +99,10 @@
 
       <div class="cols">
         <div class="panel">
+          <div class="trial-banner">
+            <span class="gift">🎁</span>
+            <span><strong data-i18n="offer_head">Първото посещение е безплатно.</strong> <span id="offer-line"></span> <span class="hint" id="offer-cd"></span></span>
+          </div>
           <div class="tabs">
             <button data-tab="login" class="on" data-i18n="tab_login">Вход</button>
             <button data-tab="register" data-i18n="tab_register">Регистрация</button>
@@ -161,7 +167,7 @@
       <div class="cols">
         <!-- Left column -->
         <div class="stack">
-          <div class="panel">
+          <div class="panel" id="sub-card">
             <div class="card-title">
               <span class="eyebrow" style="margin:0" data-i18n="sub_title">Абонамент</span>
               <span class="hint"><span data-i18n="today_hours">Днес</span> <strong id="s-today" style="color:var(--text)"></strong></span>
@@ -246,6 +252,11 @@ const T = {
     login_btn:"Влез", register_btn:"Създай профил", logout:"Изход",
     locked:"Влез, за да го видиш", perk1:"Влизаш само с QR кода", perk2:"Виждаш докога е абонаментът ти", perk3:"Следиш посещенията си",
     since:"Член от",
+    offer_head:"Първото посещение е безплатно.", offer_today:"Регистрирай се и ела днес до 21:00.", offer_tomorrow:"Регистрирай се сега, важи до утре 21:00.",
+    free_title:"Безплатно посещение", free_pill:"Безплатно посещение",
+    free_today:"Важи до днес, 21:00. Покажи QR кода на рецепцията.", free_tomorrow:"Важи до утре, 21:00. Покажи QR кода на рецепцията.",
+    free_left:"остават", free_used:"Използва безплатното посещение на {date}. Вземи абонамент на рецепцията.",
+    visit_free:"Безплатно посещение",
     sub_title:"Абонамент", active:"Активен", inactive:"Няма активен абонамент",
     until:"Валиден до", expired:"Изтекъл на", never:"Все още нямаш абонамент. Вземи го на рецепцията.",
     days_left:"дни остават", day_left:"Последен ден днес",
@@ -262,7 +273,7 @@ const T = {
     addr:"ул. „Студентска“ 1а, кв. Левски, 9010 Варна",
     err_bad_login:"Грешен имейл или парола.", err_email_taken:"Вече има профил с този имейл.",
     err_weak_password:"Паролата не отговаря на изискванията.", err_invalid_fields:"Провери полетата.",
-    err_bad_current:"Сегашната парола е грешна.", err_network:"Няма връзка със сървъра. Опитай пак."
+    err_bad_current:"Сегашната парола е грешна.", err_rate:"Твърде много опити. Изчакай малко и опитай пак.", err_network:"Няма връзка със сървъра. Опитай пак."
   },
   en: {
     eyebrow:"Your account", guest_title:"Hello, guest.",
@@ -274,6 +285,11 @@ const T = {
     login_btn:"Log in", register_btn:"Create account", logout:"Log out",
     locked:"Log in to see it", perk1:"Get in with just your QR code", perk2:"See when your subscription ends", perk3:"Track your visits",
     since:"Member since",
+    offer_head:"Your first visit is free.", offer_today:"Sign up and come in today before 21:00.", offer_tomorrow:"Sign up now, valid until tomorrow 21:00.",
+    free_title:"Free visit", free_pill:"Free visit",
+    free_today:"Valid until today, 21:00. Show your QR code at the front desk.", free_tomorrow:"Valid until tomorrow, 21:00. Show your QR code at the front desk.",
+    free_left:"left", free_used:"You used your free visit on {date}. Get a subscription at the front desk.",
+    visit_free:"Free visit",
     sub_title:"Subscription", active:"Active", inactive:"No active subscription",
     until:"Valid until", expired:"Expired on", never:"You don't have a subscription yet. Get one at the front desk.",
     days_left:"days left", day_left:"Last day today",
@@ -290,7 +306,7 @@ const T = {
     addr:"1a Studentska St, Levski, 9010 Varna",
     err_bad_login:"Wrong email or password.", err_email_taken:"An account with this email already exists.",
     err_weak_password:"Password doesn't meet the rules.", err_invalid_fields:"Check the fields.",
-    err_bad_current:"Current password is wrong.", err_network:"Can't reach the server. Try again."
+    err_bad_current:"Current password is wrong.", err_rate:"Too many tries. Wait a bit and try again.", err_network:"Can't reach the server. Try again."
   }
 };
 const HOURS = ["07:00 – 21:00","07:00 – 21:00","07:00 – 21:00","07:00 – 21:00","07:00 – 21:00","08:00 – 21:00","08:00 – 21:00"];
@@ -318,8 +334,9 @@ function render() {
   $("guest-banner").classList.toggle("hidden", !me.guest);
   $("settings").disabled = !!me.guest;
   const pill = $("p-status");
-  pill.className = "status-pill " + (me.active ? "ok" : "no");
-  pill.textContent = me.active ? t("active") : t("inactive");
+  const trialOpen = !me.active && me.trial?.open;
+  pill.className = "status-pill " + (me.active ? "ok" : trialOpen ? "free" : "no");
+  pill.textContent = me.active ? t("active") : trialOpen ? "🎁 " + t("free_pill") : t("inactive");
   $("p-since").textContent = `${t("since")} ${fmtDate(me.created_at.slice(0, 10))} · ${me.member_no}`;
 
   const st = $("s-state");
@@ -329,7 +346,23 @@ function render() {
     : me.sub_until ? `${t("expired")} ${fmtDate(me.sub_until)}` : t("never");
   $("s-left").textContent = me.active ? (me.days_left === 1 ? t("day_left") : `${me.days_left} ${t("days_left")}`) : "";
   $("s-left").classList.toggle("hidden", !me.active);
-  requestAnimationFrame(() => { $("s-bar").style.width = me.active ? Math.min(100, me.days_left / 30 * 100) + "%" : "0%"; });
+  $("sub-card").classList.toggle("trial-card", !!trialOpen);
+  clearInterval($("s-left")._cd);
+  if (trialOpen) {
+    const word = sofiaDayWord(me.trial.until) === "tomorrow" ? "tomorrow" : "today";
+    st.className = "sub-big ok";
+    st.textContent = "🎁 " + t("free_title");
+    $("s-line").textContent = t("free_" + word);
+    $("s-left").classList.remove("hidden");
+    const left = $("s-left");
+    const deadline = sofiaDeadline(me.trial.until, "21:00");
+    const tick = () => { left.textContent = `${fmtCountdown(deadline - Date.now())} ${t("free_left")}`; if (deadline <= Date.now()) { clearInterval(left._cd); load(); } };
+    tick(); left._cd = setInterval(tick, 1000);
+  } else if (!me.active && me.trial?.used_at) {
+    $("s-line").textContent = t("free_used").replace("{date}", fmtDate(me.trial.used_at.slice(0, 10)));
+  }
+  const barWidth = me.active ? Math.min(100, me.days_left / 30 * 100) + "%" : trialOpen ? "100%" : "0%";
+  requestAnimationFrame(() => { $("s-bar").style.width = barWidth; });
   $("s-today").textContent = HOURS[(new Date().getDay() + 6) % 7];
 
   $("qr").innerHTML = qrSvg(me.member_no);
@@ -343,7 +376,7 @@ function render() {
     $("st-total").textContent = visits.total;
     $("st-last").textContent = visits.recent[0] ? fmtDate(new Date(visits.recent[0].at.replace(" ", "T") + "Z").toLocaleDateString("en-CA", { timeZone: "Europe/Sofia" })) : "—";
     $("visits").innerHTML = visits.recent.length ? visits.recent.map(v =>
-      `<li><span>${esc(fmtTime(v.at))}</span><span class="hint">${t(v.active ? "visit_ok" : "visit_no")}</span></li>`).join("")
+      `<li><span>${esc(fmtTime(v.at))}</span><span class="hint">${t(v.free ? "visit_free" : v.active ? "visit_ok" : "visit_no")}</span></li>`).join("")
       : `<li class="empty">${t("no_visits")}</li>`;
   }
 }
@@ -387,25 +420,73 @@ function wire(id, url, onOk, check) {
     btn.disabled = false;
   };
 }
-wire("login", "/api/login", async f => { f.reset(); await load(); });
-wire("register", "/api/register", async f => { f.reset(); await load(); }, regOk);
 wire("details", "/api/me/update", async (f, data, ok) => { me = data; f.querySelector("input").blur(); render(); refreshNavProfile(); ok.textContent = t("saved"); });
-wire("password", "/api/me/password", async (f, data, ok) => { f.reset(); f.next.dispatchEvent(new Event("input")); ok.textContent = t("pw_changed"); }, newOk);
+
+// ---- Logins (Supabase Auth) ----
+// Turn Supabase error messages into this page's messages.
+function authError(e) {
+  const m = String(e?.message || e || "").toLowerCase();
+  if (m.includes("bad_current")) return "err_bad_current";
+  if (m.includes("invalid login")) return "err_bad_login";
+  if (m.includes("already registered") || m.includes("already exists")) return "err_email_taken";
+  if (m.includes("password")) return "err_weak_password";
+  if (m.includes("rate limit") || m.includes("too many")) return "err_rate";
+  if (m.includes("email")) return "err_invalid_fields";
+  return "err_network";
+}
+function authForm(id, run, check) {
+  $(id).onsubmit = async e => {
+    e.preventDefault();
+    const f = e.target, err = $(id + "-err"), ok = $(id + "-ok");
+    err.textContent = ""; if (ok) ok.textContent = "";
+    if (check && !check()) { err.textContent = t("err_weak_password"); return; }
+    const btn = f.querySelector("button[type=submit]");
+    btn.disabled = true;
+    try { await run(f, ok); }
+    catch (x) { err.textContent = t(authError(x)); }
+    btn.disabled = false;
+  };
+}
+const must = ({ error, data }) => { if (error) throw error; return data; };
+
+authForm("login", async f => {
+  must(await sb.auth.signInWithPassword({ email: f.email.value.trim(), password: f.password.value }));
+  await api("POST", "/api/logout"); // leave the guest view, if it was open
+  f.reset(); await load();
+});
+
+authForm("register", async f => {
+  const data = must(await sb.auth.signUp({
+    email: f.email.value.trim(), password: f.password.value,
+    options: { data: { name: f.name.value.trim(), phone: f.phone.value.trim() } },
+  }));
+  // Supabase answers "ok" without a session when the email is already registered.
+  if (!data.session) throw new Error(data.user?.identities?.length === 0 ? "already registered" : "email");
+  await api("POST", "/api/logout");
+  f.reset(); await load();
+}, regOk);
+
+authForm("password", async (f, ok) => {
+  // Check the current password first, then change it and log out other devices.
+  const check = await sb.auth.signInWithPassword({ email: me.email, password: f.current.value });
+  if (check.error) throw new Error("bad_current");
+  must(await sb.auth.updateUser({ password: f.next.value }));
+  await sb.auth.signOut({ scope: "others" });
+  f.reset(); f.next.dispatchEvent(new Event("input"));
+  ok.textContent = t("pw_changed");
+}, newOk);
 
 $("reset-btn").onclick = async () => {
-  const btn = $("reset-btn");
+  const btn = $("reset-btn"), n = $("reset-sent");
   btn.disabled = true;
-  const r = await api("POST", "/api/me/reset-email");
-  if (r.ok) {
-    const n = $("reset-sent");
-    n.textContent = t("reset_sent").replace("{email}", r.data.email);
-    n.classList.remove("hidden");
-  }
+  const { error } = await sb.auth.resetPasswordForEmail(me.email, { redirectTo: location.origin + "/reset.html" });
+  n.textContent = error ? t(authError(error)) : t("reset_sent").replace("{email}", me.email);
+  n.classList.remove("hidden");
   btn.disabled = false;
 };
 
-$("logout").onclick = async () => { await api("POST", "/api/logout"); await load(); };
-$("guest-btn").onclick = async () => { await api("POST", "/api/guest"); await load(); scrollTo(0, 0); };
+$("logout").onclick = async () => { await sb.auth.signOut(); await api("POST", "/api/logout"); await load(); };
+$("guest-btn").onclick = async () => { await sb.auth.signOut(); await api("POST", "/api/guest"); await load(); scrollTo(0, 0); };
 $("guest-signup").onclick = async () => {
   await api("POST", "/api/logout"); await load();
   document.querySelector('.tabs button[data-tab="register"]').click();
@@ -413,7 +494,19 @@ $("guest-signup").onclick = async () => {
 };
 $("yr").textContent = new Date().getFullYear();
 $("qr-sample").innerHTML = qrSvg("CF-000000");
-initLang(T, render);
+let offerUntil = null;
+function renderOfferLine() {
+  if (!offerUntil) return;
+  $("offer-line").textContent = t(sofiaDayWord(offerUntil) === "tomorrow" ? "offer_tomorrow" : "offer_today");
+}
+fetch("/api/offer").then(r => r.json()).then(o => {
+  offerUntil = o.until; renderOfferLine();
+  startCountdown($("offer-cd"), sofiaDeadline(o.until, o.closes));
+}).catch(() => {});
+if (location.hash === "#register") document.querySelector('.tabs button[data-tab="register"]').click();
+
+initLang(T, () => { render(); renderOfferLine(); });
+sb.auth.onAuthStateChange(ev => { if (ev === "SIGNED_OUT" || ev === "TOKEN_REFRESHED") load(); });
 load();
 </script>
 </body>

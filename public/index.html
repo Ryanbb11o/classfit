@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
 <script src="i18n.js"></script>
 </head>
 <body>
@@ -19,6 +21,9 @@
   <div class="hero-photo" role="img" aria-label="Classfit"></div>
   <div class="hero-bg"></div>
   <div class="wrap">
+    <a href="account.html#register" class="offer-pill" id="hero-offer">
+      <span class="gift">🎁</span><span data-i18n="pill">Първото посещение е безплатно</span><span class="cd" id="pill-cd"></span>
+    </a>
     <span class="eyebrow" data-i18n="hero_eyebrow">Фитнес · кв. Левски · Варна</span>
     <h1 data-i18n-html="hero_title">Тренирай<br><em>с характер.</em></h1>
     <p class="lead" data-i18n="hero_lead">Просторна зала с ново оборудване, добра музика и общност от хора, които идват да работят. Отворено всеки ден.</p>
@@ -30,6 +35,29 @@
       <div><b>4.5★</b><small data-i18n="fact_rating">141 отзива в Google</small></div>
       <div><b>7–21</b><small data-i18n="fact_hours">Пон–Пет</small></div>
       <div><b>8–21</b><small data-i18n="fact_weekend">Съб–Нед</small></div>
+    </div>
+  </div>
+</section>
+
+<section class="offer" id="offer">
+  <div class="wrap">
+    <div class="offer-card">
+      <div>
+        <span class="eyebrow" data-i18n="offer_eyebrow">Оферта за нови членове</span>
+        <h2 data-i18n-html="offer_title">Първата тренировка е <em>безплатна.</em></h2>
+        <p class="lead" id="offer-lead"></p>
+        <ol class="offer-steps">
+          <li data-i18n="step1">Създай профил за 30 секунди</li>
+          <li data-i18n="step2">Получаваш QR код в профила си</li>
+          <li data-i18n="step3">Покажи го на рецепцията и тренирай</li>
+        </ol>
+        <a href="account.html#register" class="btn" data-i18n="offer_cta">Вземи безплатното посещение</a>
+      </div>
+      <div class="offer-timer">
+        <div class="lbl" data-i18n="timer_lbl">Офертата изтича след</div>
+        <div class="big" id="offer-cd">—</div>
+        <div class="hint" id="offer-until"></div>
+      </div>
     </div>
   </div>
 </section>
@@ -155,6 +183,13 @@
 <script>
 const T = {
   bg: {
+    pill:"Първото посещение е безплатно", offer_eyebrow:"Оферта за нови членове",
+    offer_title:"Първата тренировка е <em>безплатна.</em>",
+    offer_lead_today:"Регистрирай се сега и ела днес. Безплатното посещение важи до затварянето в 21:00.",
+    offer_lead_tomorrow:"Днес е късно? Няма проблем. Регистрирай се сега и посещението важи до утре в 21:00.",
+    step1:"Създай профил за 30 секунди", step2:"Получаваш QR код в профила си", step3:"Покажи го на рецепцията и тренирай",
+    offer_cta:"Вземи безплатното посещение", timer_lbl:"Офертата изтича след",
+    until_today:"Важи до днес, 21:00", until_tomorrow:"Важи до утре, 21:00",
     nav_about:"За нас", nav_gym:"Залата", nav_prices:"Цени", nav_visit:"Контакти", call:"Обади се", account:"Профил",
     hero_eyebrow:"Фитнес · кв. Левски · Варна", hero_title:"Тренирай<br><em>с характер.</em>",
     hero_lead:"Просторна зала с ново оборудване, добра музика и общност от хора, които идват да работят. Отворено всеки ден.",
@@ -178,6 +213,13 @@ const T = {
     days:["Понеделник","Вторник","Сряда","Четвъртък","Петък","Събота","Неделя"]
   },
   en: {
+    pill:"Your first visit is free", offer_eyebrow:"New member offer",
+    offer_title:"Your first workout is <em>free.</em>",
+    offer_lead_today:"Sign up now and come in today. The free visit is valid until we close at 21:00.",
+    offer_lead_tomorrow:"Too late for today? No problem. Sign up now and the visit is valid until tomorrow at 21:00.",
+    step1:"Create an account in 30 seconds", step2:"Get your QR code in your account", step3:"Show it at the front desk and train",
+    offer_cta:"Claim your free visit", timer_lbl:"Offer ends in",
+    until_today:"Valid until today, 21:00", until_tomorrow:"Valid until tomorrow, 21:00",
     nav_about:"About", nav_gym:"The gym", nav_prices:"Prices", nav_visit:"Contact", call:"Call us", account:"Account",
     hero_eyebrow:"Gym · Levski · Varna", hero_title:"Train<br><em>with grit.</em>",
     hero_lead:"A spacious gym with new equipment, good music and a crowd that comes to work. Open every day.",
@@ -209,7 +251,22 @@ function renderHours() {
     `<tr class="${i === today ? "today" : ""}"><td>${d}</td><td>${HOURS[i]}</td></tr>`).join("");
 }
 document.getElementById("yr").textContent = new Date().getFullYear();
-initLang(T, renderHours);
+let offer = null;
+function renderOffer() {
+  if (!offer) return;
+  const word = sofiaDayWord(offer.until) === "tomorrow" ? "tomorrow" : "today";
+  document.getElementById("offer-lead").textContent = T[LANG]["offer_lead_" + word];
+  document.getElementById("offer-until").textContent = T[LANG]["until_" + word];
+}
+async function loadOffer() {
+  try { offer = await (await fetch("/api/offer")).json(); } catch { return; }
+  const deadline = sofiaDeadline(offer.until, offer.closes);
+  renderOffer();
+  startCountdown(document.getElementById("offer-cd"), deadline, loadOffer);
+  startCountdown(document.getElementById("pill-cd"), deadline);
+}
+initLang(T, () => { renderHours(); renderOffer(); });
+loadOffer();
 </script>
 </body>
 </html>

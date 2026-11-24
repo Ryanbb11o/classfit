@@ -282,3 +282,38 @@ header { background: rgba(13,15,14,.72); backdrop-filter: blur(20px) saturate(16
 .fade-in { animation: fadeIn 400ms var(--ease-out); }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } }
 @media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }
+
+/* ---------- Free first visit offer ---------- */
+.offer-pill { display: inline-flex; align-items: center; gap: 10px; padding: 7px 14px 7px 8px; border-radius: 999px; margin-bottom: 22px;
+  background: rgba(182,242,46,.1); border: 1px solid rgba(182,242,46,.35); color: var(--text); font-size: .9rem; font-weight: 600;
+  transition: background-color 200ms ease, transform 100ms ease-out; }
+.offer-pill:hover { background: rgba(182,242,46,.16); }
+.offer-pill:active { transform: scale(.98); }
+.offer-pill .gift { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font-size: .85rem; }
+.offer-pill .cd { color: var(--accent); font-variant-numeric: tabular-nums; }
+
+.offer { padding: 0; border: 0; margin: -40px 0 40px; position: relative; z-index: 1; }
+.offer-card { position: relative; overflow: hidden; display: grid; grid-template-columns: 1.3fr 1fr; gap: 32px; align-items: center;
+  padding: 40px; border-radius: 24px; background: linear-gradient(120deg, #1a2410 0%, #151816 55%);
+  border: 1px solid rgba(182,242,46,.35); box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+.offer-card::before { content: ""; position: absolute; width: 520px; height: 520px; right: -160px; top: -260px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(182,242,46,.22), transparent 65%); pointer-events: none; }
+.offer-card h2 { font-size: clamp(1.8rem, 3.6vw, 2.8rem); letter-spacing: -.02em; margin: 6px 0 12px; }
+.offer-card h2 em { font-style: normal; color: var(--accent); }
+.offer-card .lead { margin-bottom: 24px; }
+.offer-timer { position: relative; text-align: center; padding: 28px 20px; border-radius: 18px; background: rgba(0,0,0,.35); border: 1px solid var(--line); }
+.offer-timer .lbl { color: var(--muted); font-size: .85rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.offer-timer .big { font: 800 clamp(1.6rem, 3.4vw, 2.4rem) "Unbounded", sans-serif; color: var(--accent); margin: 10px 0 6px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.offer-steps { list-style: none; display: grid; gap: 8px; color: var(--muted); margin-bottom: 26px; counter-reset: s; }
+.offer-steps li { display: flex; gap: 12px; align-items: center; }
+.offer-steps li::before { counter-increment: s; content: counter(s); width: 24px; height: 24px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: rgba(182,242,46,.14); color: var(--accent); font-weight: 700; font-size: .8rem; }
+@media (max-width: 860px) { .offer-card { grid-template-columns: 1fr; padding: 26px; } .offer { margin-top: -20px; } }
+
+.trial-card { border-color: rgba(182,242,46,.45); background: linear-gradient(140deg, #1a2410, var(--bg-2) 60%); }
+.trial-banner { display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-radius: 14px; margin-bottom: 22px;
+  background: rgba(182,242,46,.1); border: 1px solid rgba(182,242,46,.35); font-size: .92rem; }
+.trial-banner .gift { width: 34px; height: 34px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); }
+.trial-banner strong { color: var(--accent); }
+.status-pill.free { background: rgba(182,242,46,.14); color: var(--accent); }
+.offer-pill .cd::before { content: "· "; color: var(--muted); }

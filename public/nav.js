@@ -88,9 +88,9 @@
     const el = document.getElementById("nav-profile");
     const initials = el.querySelector(".initials");
     try {
-      const r = await fetch("/api/me", { credentials: "same-origin" });
+      const r = await api("GET", "/api/me");
       if (!r.ok) throw 0;
-      const me = await r.json();
+      const me = r.data;
       initials.textContent = me.name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
       initials.hidden = false;
       el.classList.add("signed-in");
