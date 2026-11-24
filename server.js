@@ -15,9 +15,9 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";            // public, also used in the browser
 const SUPABASE_SECRET = process.env.SUPABASE_SERVICE_ROLE_KEY || "";       // server only: full database access
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SECRET) {
-  console.error("Missing Supabase settings. Create .env with SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY (see README).");
-  process.exit(1);
+const CONFIGURED = !!(SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_SECRET);
+if (!CONFIGURED) {
+  console.error("Missing Supabase settings: SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY (in .env locally, or in the Vercel project's environment variables).");
 }
 // Front desk and trainer access. While STAFF_PIN is not set, those pages are OPEN TO EVERYONE
 // (anyone can see member details and change subscriptions). Set STAFF_PIN before going live.
@@ -105,8 +105,10 @@ function readBody(req) {
 function cookies(req) {
   return Object.fromEntries((req.headers.cookie || "").split(";").map(c => c.trim().split("=")).filter(p => p[0]));
 }
+// On Vercel (https) cookies are also marked Secure.
+const SECURE = process.env.VERCEL ? "; Secure" : "";
 function setCookie(name, value, maxAgeSec) {
-  return `${name}=${value}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAgeSec}`;
+  return `${name}=${value}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAgeSec}${SECURE}`;
 }
 // Signed cookie values: "<kind>.<expiry ms>.<signature>", no server-side storage needed.
 function signed(kind, hours) {
@@ -413,17 +415,26 @@ function serveStatic(req, res) {
   });
 }
 
-http.createServer(async (req, res) => {
+// One handler for both: the local server below, and the Vercel function in api/index.js.
+async function handler(req, res) {
   const key = `${req.method} ${new URL(req.url, "http://x").pathname}`;
   const route = routes[key];
   if (route) {
+    if (!CONFIGURED) return send(res, 500, { error: "not_configured" });
     try { await route(req, res); }
     catch (e) { console.error(e.message, e.details || ""); if (!res.headersSent) send(res, 500, { error: "server_error" }); }
     return;
   }
   if (req.url.startsWith("/api/")) return send(res, 404, { error: "no_route" });
   serveStatic(req, res);
-}).listen(PORT, () => {
-  console.log(`Classfit running at http://localhost:${PORT} (Supabase: ${SUPABASE_URL})`);
-  if (DESK_OPEN) console.log("WARNING: front desk and trainer pages are open to everyone (no STAFF_PIN set). Set STAFF_PIN before going live.");
-});
+}
+module.exports = handler;
+
+// Run as a normal server with: node server.js
+if (require.main === module) {
+  if (!CONFIGURED) process.exit(1);
+  http.createServer(handler).listen(PORT, () => {
+    console.log(`Classfit running at http://localhost:${PORT} (Supabase: ${SUPABASE_URL})`);
+    if (DESK_OPEN) console.log("WARNING: front desk and trainer pages are open to everyone (no STAFF_PIN set). Set STAFF_PIN before going live.");
+  });
+}

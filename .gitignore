@@ -161,3 +161,6 @@ vite.config.ts.timestamp-*
 data/
 # Local Claude app preview config
 .claude/
+
+.vercel
+.env*
