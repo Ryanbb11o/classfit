@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Classfit — Фитнес във Варна</title>
+<meta name="description" content="Classfit — фитнес в кв. Левски, Варна. ул. „Студентска“ 1а. Отворено всеки ден.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<script src="i18n.js"></script>
+</head>
+<body>
+
+<header id="site-header"></header>
+
+<section class="hero">
+  <div class="hero-photo" role="img" aria-label="Classfit"></div>
+  <div class="hero-bg"></div>
+  <div class="wrap">
+    <span class="eyebrow" data-i18n="hero_eyebrow">Фитнес · кв. Левски · Варна</span>
+    <h1 data-i18n-html="hero_title">Тренирай<br><em>с характер.</em></h1>
+    <p class="lead" data-i18n="hero_lead">Просторна зала с ново оборудване, добра музика и общност от хора, които идват да работят. Отворено всеки ден.</p>
+    <div class="cta-row">
+      <a href="#visit" class="btn" data-i18n="hero_cta">Ела на тренировка</a>
+      <a href="#prices" class="btn ghost" data-i18n="hero_cta2">Виж цените</a>
+    </div>
+    <div class="facts">
+      <div><b>4.5★</b><small data-i18n="fact_rating">141 отзива в Google</small></div>
+      <div><b>7–21</b><small data-i18n="fact_hours">Пон–Пет</small></div>
+      <div><b>8–21</b><small data-i18n="fact_weekend">Съб–Нед</small></div>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="wrap">
+    <span class="eyebrow" data-i18n="about_eyebrow">Защо Classfit</span>
+    <h2 data-i18n="about_title">Какво има в залата.</h2>
+    <p class="lead" data-i18n="about_lead">Свободни тежести, машини и кардио. Отворено всеки ден.</p>
+    <div class="grid">
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 7v10M18 7v10M3 9v6M21 9v6M6 12h12"/></svg></div>
+        <h3 data-i18n="f1_t">Свободни тежести</h3>
+        <p data-i18n="f1_d">Дъмбели, щанги, лагове и рейкове за силови тренировки.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 4v16M3 12h5"/></svg></div>
+        <h3 data-i18n="f2_t">Ново оборудване</h3>
+        <p data-i18n="f2_d">Наскоро обновени машини.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></div>
+        <h3 data-i18n="f3_t">Кардио зона</h3>
+        <p data-i18n="f3_d">Пътеки, велоергометри и гребни машини.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M15 20c0-2.5 1.5-4.5 4-4.5"/></svg></div>
+        <h3 data-i18n="f4_t">Общност</h3>
+        <p data-i18n="f4_d">Приятелски екип и редовни посетители, които се познават.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="gym">
+  <div class="wrap">
+    <span class="eyebrow" data-i18n="gym_eyebrow">Залата</span>
+    <h2 data-i18n="gym_title">Виж отвътре.</h2>
+    <div class="gallery">
+      <figure class="shot big"><img src="img/gym-floor.jpg" alt="Основната зала на Classfit" data-i18n-alt="cap1" loading="lazy"><figcaption data-i18n="cap1">Основна зала</figcaption></figure>
+      <figure class="shot"><img src="img/gym-functional.jpg" alt="Функционална зона" data-i18n-alt="cap2" loading="lazy"><figcaption data-i18n="cap2">Функционална зона</figcaption></figure>
+      <figure class="shot"><img src="img/gym-cardio.jpg" alt="Кардио зона" data-i18n-alt="cap3" loading="lazy"><figcaption data-i18n="cap3">Кардио зона</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section id="prices">
+  <div class="wrap">
+    <span class="eyebrow" data-i18n="prices_eyebrow">Цени</span>
+    <h2 data-i18n="prices_title">Избери своя план.</h2>
+    <div class="grid">
+      <div class="card price">
+        <h3 data-i18n="p1_t">Еднократно</h3>
+        <div class="amt">€— <small data-i18n="p_visit">/ посещение</small></div>
+        <ul><li data-i18n="p_all">Цялата зала</li><li data-i18n="p_lock">Съблекалня и душове</li></ul>
+        <a href="#visit" class="btn ghost" data-i18n="p_cta">Ела днес</a>
+      </div>
+      <div class="card price featured">
+        <span class="tag" data-i18n="p_pop">Най-избиран</span>
+        <h3 data-i18n="p2_t">Месечна карта</h3>
+        <div class="amt">€— <small data-i18n="p_month">/ месец</small></div>
+        <ul><li data-i18n="p_unl">Неограничени посещения</li><li data-i18n="p_all">Цялата зала</li><li data-i18n="p_lock">Съблекалня и душове</li></ul>
+        <a href="#visit" class="btn" data-i18n="p_cta2">Вземи карта</a>
+      </div>
+      <div class="card price">
+        <h3 data-i18n="p3_t">Студентска карта</h3>
+        <div class="amt">€— <small data-i18n="p_month">/ месец</small></div>
+        <ul><li data-i18n="p_unl">Неограничени посещения</li><li data-i18n="p_id">С валидна студентска книжка</li></ul>
+        <a href="#visit" class="btn ghost" data-i18n="p_cta2">Вземи карта</a>
+      </div>
+    </div>
+    <p class="note" data-i18n="p_note">* Цените ще бъдат добавени.</p>
+  </div>
+</section>
+
+<section id="reviews">
+  <div class="wrap">
+    <span class="eyebrow" data-i18n="rev_eyebrow">Отзиви</span>
+    <h2 data-i18n="rev_title">Какво казват хората.</h2>
+    <div class="rating">
+      <div class="score">4.5</div>
+      <div>
+        <div class="stars">★★★★★</div>
+        <p class="lead" data-i18n="rev_count">141 отзива в Google</p>
+      </div>
+      <a class="btn ghost" target="_blank" rel="noopener" href="https://maps.app.goo.gl/3wiJw7MesJyvVSA16" data-i18n="rev_cta">Прочети отзивите</a>
+    </div>
+  </div>
+</section>
+
+<section id="visit">
+  <div class="wrap">
+    <span class="eyebrow" data-i18n="visit_eyebrow">Посети ни</span>
+    <h2 data-i18n="visit_title">Ела на ул. „Студентска“.</h2>
+    <div class="visit">
+      <div>
+        <table class="hours" id="hours"></table>
+        <ul class="contact-list">
+          <li data-i18n="addr">ул. „Студентска“ 1а, кв. Левски, 9010 Варна</li>
+          <li><a href="tel:+359894830386">089 483 0386</a></li>
+          <li><a href="https://www.facebook.com/" target="_blank" rel="noopener">Facebook</a></li>
+        </ul>
+        <div class="cta-row" style="margin-top:28px">
+          <a class="btn" target="_blank" rel="noopener" href="https://maps.app.goo.gl/3wiJw7MesJyvVSA16" data-i18n="directions">Упътване</a>
+        </div>
+      </div>
+      <div class="map">
+        <iframe title="Classfit map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+          src="https://www.google.com/maps?q=43.2244205,27.9304492&z=16&output=embed"></iframe>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© <span id="yr"></span> Classfit Varna</span>
+    <span data-i18n="addr">ул. „Студентска“ 1а, кв. Левски, 9010 Варна</span>
+  </div>
+</footer>
+
+<script src="nav.js"></script>
+<script>
+const T = {
+  bg: {
+    nav_about:"За нас", nav_gym:"Залата", nav_prices:"Цени", nav_visit:"Контакти", call:"Обади се", account:"Профил",
+    hero_eyebrow:"Фитнес · кв. Левски · Варна", hero_title:"Тренирай<br><em>с характер.</em>",
+    hero_lead:"Просторна зала с ново оборудване, добра музика и общност от хора, които идват да работят. Отворено всеки ден.",
+    hero_cta:"Ела на тренировка", hero_cta2:"Виж цените",
+    fact_rating:"141 отзива в Google", fact_hours:"Пон–Пет", fact_weekend:"Съб–Нед",
+    about_eyebrow:"Защо Classfit", about_title:"Какво има в залата.",
+    about_lead:"Свободни тежести, машини и кардио. Отворено всеки ден.",
+    f1_t:"Свободни тежести", f1_d:"Дъмбели, щанги, лагове и рейкове за силови тренировки.",
+    f2_t:"Ново оборудване", f2_d:"Наскоро обновени машини.",
+    f3_t:"Кардио зона", f3_d:"Пътеки, велоергометри и гребни машини.",
+    f4_t:"Общност", f4_d:"Приятелски екип и редовни посетители, които се познават.",
+    gym_eyebrow:"Залата", gym_title:"Виж отвътре.", cap1:"Основна зала", cap2:"Функционална зона", cap3:"Кардио зона",
+    prices_eyebrow:"Цени", prices_title:"Избери своя план.",
+    p1_t:"Еднократно", p2_t:"Месечна карта", p3_t:"Студентска карта",
+    p_visit:"/ посещение", p_month:"/ месец", p_all:"Цялата зала", p_lock:"Съблекалня и душове",
+    p_unl:"Неограничени посещения", p_id:"С валидна студентска книжка", p_pop:"Най-избиран",
+    p_cta:"Ела днес", p_cta2:"Вземи карта", p_note:"* Цените ще бъдат добавени.",
+    rev_eyebrow:"Отзиви", rev_title:"Какво казват хората.", rev_count:"141 отзива в Google", rev_cta:"Прочети отзивите",
+    visit_eyebrow:"Посети ни", visit_title:"Ела на ул. „Студентска“.",
+    addr:"ул. „Студентска“ 1а, кв. Левски, 9010 Варна", directions:"Упътване",
+    days:["Понеделник","Вторник","Сряда","Четвъртък","Петък","Събота","Неделя"]
+  },
+  en: {
+    nav_about:"About", nav_gym:"The gym", nav_prices:"Prices", nav_visit:"Contact", call:"Call us", account:"Account",
+    hero_eyebrow:"Gym · Levski · Varna", hero_title:"Train<br><em>with grit.</em>",
+    hero_lead:"A spacious gym with new equipment, good music and a crowd that comes to work. Open every day.",
+    hero_cta:"Come train", hero_cta2:"See prices",
+    fact_rating:"141 Google reviews", fact_hours:"Mon–Fri", fact_weekend:"Sat–Sun",
+    about_eyebrow:"Why Classfit", about_title:"What is in the gym.",
+    about_lead:"Free weights, machines and cardio. Open every day.",
+    f1_t:"Free weights", f1_d:"Dumbbells, barbells, plates and racks for strength work.",
+    f2_t:"New equipment", f2_d:"Recently upgraded machines.",
+    f3_t:"Cardio zone", f3_d:"Treadmills, bikes and rowing machines.",
+    f4_t:"Community", f4_d:"Friendly staff and regulars who know each other.",
+    gym_eyebrow:"The gym", gym_title:"Take a look inside.", cap1:"Main floor", cap2:"Functional zone", cap3:"Cardio zone",
+    prices_eyebrow:"Prices", prices_title:"Pick your plan.",
+    p1_t:"Single visit", p2_t:"Monthly pass", p3_t:"Student pass",
+    p_visit:"/ visit", p_month:"/ month", p_all:"Full gym access", p_lock:"Locker rooms & showers",
+    p_unl:"Unlimited visits", p_id:"With a valid student ID", p_pop:"Most popular",
+    p_cta:"Come today", p_cta2:"Get a pass", p_note:"* Prices to be added.",
+    rev_eyebrow:"Reviews", rev_title:"What people say.", rev_count:"141 Google reviews", rev_cta:"Read the reviews",
+    visit_eyebrow:"Visit us", visit_title:"Find us on Studentska St.",
+    addr:"1a Studentska St, Levski, 9010 Varna", directions:"Get directions",
+    days:["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
+  }
+};
+const HOURS = ["07:00 – 21:00","07:00 – 21:00","07:00 – 21:00","07:00 – 21:00","07:00 – 21:00","08:00 – 21:00","08:00 – 21:00"];
+
+function renderHours() {
+  const today = (new Date().getDay() + 6) % 7;
+  document.getElementById("hours").innerHTML = T[LANG].days.map((d, i) =>
+    `<tr class="${i === today ? "today" : ""}"><td>${d}</td><td>${HOURS[i]}</td></tr>`).join("");
+}
+document.getElementById("yr").textContent = new Date().getFullYear();
+initLang(T, renderHours);
+</script>
+</body>
+</html>

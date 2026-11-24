@@ -1,0 +1,11 @@
+{
+  "name": "classfit",
+  "private": true,
+  "description": "Classfit gym website with member accounts and front desk check-in",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
+}

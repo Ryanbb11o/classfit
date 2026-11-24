@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Смяна на парола — Classfit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<script src="i18n.js"></script>
+</head>
+<body>
+
+<header id="site-header"></header>
+
+<main class="app-main">
+  <div class="wrap narrow">
+    <span class="eyebrow" data-i18n="eyebrow">Парола</span>
+
+    <!-- Step 1: ask for email -->
+    <div id="ask">
+      <h2 data-i18n="ask_title">Забравена парола?</h2>
+      <p class="lead" style="margin-bottom:24px" data-i18n="ask_lead">Въведи имейла на профила си и ще ти изпратим линк за нова парола.</p>
+      <form id="ask-form" class="panel form">
+        <label><span data-i18n="email">Имейл</span><input name="email" type="email" autocomplete="email" required></label>
+        <div id="ask-sent" class="notice hidden"></div>
+        <button class="btn" type="submit" data-i18n="send">Изпрати линк</button>
+        <a href="account.html" class="link-btn" data-i18n="back">Обратно към вход</a>
+      </form>
+    </div>
+
+    <!-- Step 2: set new password (opened from the email link) -->
+    <div id="set" class="hidden">
+      <h2 data-i18n="set_title">Нова парола.</h2>
+      <p class="lead" style="margin-bottom:24px" data-i18n="set_lead">Избери силна парола, която не ползваш другаде.</p>
+      <form id="set-form" class="panel form">
+        <label><span data-i18n="new_pw">Нова парола</span><input name="password" type="password" autocomplete="new-password" required></label>
+        <ul class="pw-rules" id="rules"></ul>
+        <label><span data-i18n="repeat">Повтори паролата</span><input name="repeat" type="password" autocomplete="new-password" required></label>
+        <p class="error" id="set-err"></p>
+        <button class="btn" type="submit" data-i18n="save">Запази паролата</button>
+      </form>
+    </div>
+
+    <!-- Done -->
+    <div id="done" class="hidden">
+      <h2 data-i18n="done_title">Готово.</h2>
+      <p class="lead" style="margin-bottom:24px" data-i18n="done_lead">Паролата е сменена. Влез с новата парола.</p>
+      <a href="account.html" class="btn" data-i18n="login">Към вход</a>
+    </div>
+  </div>
+</main>
+
+<script src="nav.js"></script>
+<script>
+const T = {
+  bg: {
+    eyebrow:"Парола", ask_title:"Забравена парола?", ask_lead:"Въведи имейла на профила си и ще ти изпратим линк за нова парола.",
+    email:"Имейл", send:"Изпрати линк", back:"Обратно към вход",
+    sent:"Ако има профил с този имейл, изпратихме линк за смяна на паролата. Провери пощата си (и папка Спам). Линкът важи 60 минути.",
+    set_title:"Нова парола.", set_lead:"Избери силна парола, която не ползваш другаде.",
+    new_pw:"Нова парола", repeat:"Повтори паролата", save:"Запази паролата",
+    done_title:"Готово.", done_lead:"Паролата е сменена. Влез с новата парола.", login:"Към вход",
+    err_mismatch:"Паролите не съвпадат.", err_weak_password:"Паролата не отговаря на изискванията.",
+    err_bad_token:"Линкът е невалиден или изтекъл. Поискай нов.", err_network:"Няма връзка със сървъра."
+  },
+  en: {
+    eyebrow:"Password", ask_title:"Forgot your password?", ask_lead:"Enter your account email and we'll send you a link to set a new password.",
+    email:"Email", send:"Send link", back:"Back to log in",
+    sent:"If an account with this email exists, we've sent a password reset link. Check your inbox (and spam). The link works for 60 minutes.",
+    set_title:"New password.", set_lead:"Pick a strong password you don't use anywhere else.",
+    new_pw:"New password", repeat:"Repeat password", save:"Save password",
+    done_title:"Done.", done_lead:"Your password is changed. Log in with the new one.", login:"Go to log in",
+    err_mismatch:"Passwords don't match.", err_weak_password:"Password doesn't meet the rules.",
+    err_bad_token:"This link is invalid or expired. Ask for a new one.", err_network:"Can't reach the server."
+  }
+};
+const $ = id => document.getElementById(id);
+const token = new URLSearchParams(location.search).get("token");
+initLang(T);
+
+if (token) { $("ask").classList.add("hidden"); $("set").classList.remove("hidden"); }
+const pwOk = attachPwRules($("set-form").password, $("rules"));
+
+$("ask-form").onsubmit = async e => {
+  e.preventDefault();
+  const btn = e.target.querySelector("button");
+  btn.disabled = true;
+  try { await api("POST", "/api/password/forgot", { email: e.target.email.value }); } catch {}
+  $("ask-sent").textContent = t("sent");
+  $("ask-sent").classList.remove("hidden");
+  btn.disabled = false;
+};
+
+$("set-form").onsubmit = async e => {
+  e.preventDefault();
+  const f = e.target, err = $("set-err");
+  err.textContent = "";
+  if (!pwOk()) return err.textContent = t("err_weak_password");
+  if (f.password.value !== f.repeat.value) return err.textContent = t("err_mismatch");
+  try {
+    const r = await api("POST", "/api/password/reset", { token, password: f.password.value });
+    if (r.ok) { $("set").classList.add("hidden"); $("done").classList.remove("hidden"); history.replaceState(null, "", "reset.html"); refreshNavProfile(); }
+    else err.textContent = t("err_" + (r.data?.error || "bad_token"));
+  } catch { err.textContent = t("err_network"); }
+};
+</script>
+</body>
+</html>

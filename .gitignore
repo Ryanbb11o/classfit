@@ -155,3 +155,9 @@ vite.config.ts.timestamp-*
 .nx/cache
 .nx/workspace-data
 .nx/migrate-runs
+
+# Classfit
+# Member database and saved emails (personal data, never commit)
+data/
+# Local Claude app preview config
+.claude/

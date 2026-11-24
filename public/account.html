@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Профил — Classfit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script src="i18n.js"></script>
+<style>
+  .stack { display: grid; gap: 20px; align-content: start; }
+  /* Two columns that stack independently, so short cards never leave holes. */
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+
+  .cols > .stack:last-child { position: sticky; top: 88px; }
+  .acct-head { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .avatar { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; flex: none;
+    background: var(--accent); color: var(--accent-ink); font: 800 1.35rem "Unbounded", sans-serif; }
+  .avatar.guest { background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid var(--line); }
+  .avatar.guest svg { width: 30px; height: 30px; }
+  .acct-head h1 { font-size: clamp(1.5rem, 3.2vw, 2.1rem); letter-spacing: -.02em; margin-bottom: 6px; }
+  .acct-head .grow { flex: 1; min-width: 200px; }
+  .acct-head .meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+  .card-title { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+  .panel h2 { margin-bottom: 0; }
+  .sub-big { font: 800 clamp(1.4rem, 2.6vw, 1.9rem) "Unbounded", sans-serif; letter-spacing: -.02em; margin: 14px 0 4px; }
+  .sub-big.ok { color: var(--accent); } .sub-big.no { color: #ff7a6b; }
+  .bar { height: 8px; border-radius: 99px; background: rgba(255,255,255,.07); overflow: hidden; margin: 18px 0 8px; }
+  .bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--accent); transition: width 700ms var(--ease-out); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 24px; border-top: 1px solid var(--line); }
+  .stats > div { padding: 18px 0 2px; }
+  .stats > div + div { padding-left: 20px; border-left: 1px solid var(--line); }
+  .stats .num { font: 800 1.6rem "Unbounded", sans-serif; line-height: 1.15; margin-top: 4px; }
+  .stats .lbl { color: var(--muted); font-size: .85rem; }
+
+  .visits { list-style: none; margin-top: 12px; }
+  .visits li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .visits li:last-child { border-bottom: 0; }
+  .empty { color: var(--muted); padding: 28px 0 10px; text-align: center; }
+
+  .kv { margin-top: 8px; }
+  .settings { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 0; }
+  .settings > form, .settings > div { padding: 32px; }
+  .settings > div { border-left: 1px solid var(--line); }
+  .settings h2 { margin-bottom: 4px; }
+  .settings .form { align-content: start; }
+  .settings .hint { margin-bottom: 8px; }
+  .divider { height: 1px; background: var(--line); margin: 8px 0; }
+
+  .ok-msg { color: var(--accent); font-size: .9rem; }
+  fieldset.settings { min-width: 0; margin: 0; }
+  fieldset.settings:disabled { opacity: .55; }
+  fieldset.settings:disabled .btn { cursor: not-allowed; }
+  .or { display: flex; align-items: center; gap: 12px; color: #6f7872; font-size: .85rem; margin: 22px 0 14px; }
+  .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .guest-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap;
+    padding: 14px 18px; border-radius: var(--radius); background: rgba(182,242,46,.08); border: 1px solid rgba(182,242,46,.35); font-weight: 500; }
+  .guest-qr .qr-box { filter: blur(5px); opacity: .5; }
+  .guest-qr .lock { position: absolute; inset: 0; display: grid; place-items: center; }
+  .guest-qr .lock .status-pill { background: #2a1714; box-shadow: 0 8px 24px rgba(0,0,0,.5); padding: 8px 16px; }
+  .perks { list-style: none; margin-top: 18px; display: grid; gap: 10px; text-align: left; color: var(--muted); }
+  .perks li::before { content: "✓  "; color: var(--accent); font-weight: 700; }
+  .fade-in { animation: fadeIn 400ms var(--ease-out); }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } }
+  @media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } .bar i { transition: none; } }
+  @media (max-width: 900px) {
+    .cols > .stack:last-child { position: static; }
+    .cols, .settings { grid-template-columns: 1fr; }
+    .settings > div { border-left: 0; border-top: 1px solid var(--line); }
+    .settings > form, .settings > div { padding: 22px; }
+    .stats > div + div { padding-left: 12px; }
+    .stats .num { font-size: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<header id="site-header"></header>
+
+<main class="app-main">
+  <div class="wrap">
+
+    <!-- ================= Guest (not logged in) ================= -->
+    <div id="guest" class="stack hidden">
+      <div class="panel acct-head">
+        <div class="avatar guest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8.5" r="3.75"/><path d="M4.75 19.5c1.2-3.3 4-5 7.25-5s6.05 1.7 7.25 5"/></svg></div>
+        <div class="grow">
+          <span class="eyebrow" data-i18n="eyebrow">Твоят профил</span>
+          <h1 data-i18n="guest_title">Здравей, госте.</h1>
+          <p class="hint" data-i18n="guest_lead">Влез или създай профил, за да получиш своя QR код за рецепцията.</p>
+        </div>
+      </div>
+
+      <div class="cols">
+        <div class="panel">
+          <div class="tabs">
+            <button data-tab="login" class="on" data-i18n="tab_login">Вход</button>
+            <button data-tab="register" data-i18n="tab_register">Регистрация</button>
+          </div>
+
+          <form id="login" class="form">
+            <label><span data-i18n="email">Имейл</span><input name="email" type="email" autocomplete="email" required></label>
+            <label><span data-i18n="password">Парола</span><input name="password" type="password" autocomplete="current-password" required></label>
+            <p class="error" id="login-err"></p>
+            <button class="btn" type="submit" data-i18n="login_btn">Влез</button>
+            <a href="reset.html" class="link-btn" data-i18n="forgot">Забравена парола?</a>
+          </form>
+
+          <form id="register" class="form hidden">
+            <label><span data-i18n="name">Име и фамилия</span><input name="name" autocomplete="name" required></label>
+            <label><span data-i18n="email">Имейл</span><input name="email" type="email" autocomplete="email" required></label>
+            <label><span data-i18n="phone">Телефон</span><input name="phone" type="tel" autocomplete="tel" placeholder="08X XXX XXXX" required></label>
+            <label><span data-i18n="password">Парола</span><input name="password" type="password" autocomplete="new-password" required></label>
+            <ul class="pw-rules" id="reg-rules"></ul>
+            <p class="error" id="register-err"></p>
+            <button class="btn" type="submit" data-i18n="register_btn">Създай профил</button>
+          </form>
+
+          <div class="or"><span data-i18n="or">или</span></div>
+          <button id="guest-btn" class="btn ghost" type="button" style="width:100%" data-i18n="guest_btn">Продължи като гост</button>
+          <p class="hint" style="text-align:center;margin-top:10px" data-i18n="guest_hint">Разгледай примерен профил, без регистрация.</p>
+        </div>
+
+        <div class="panel qr-card guest-qr">
+          <h2 data-i18n="qr_title">Твоят QR код</h2>
+          <div style="position:relative">
+            <div class="qr-box" id="qr-sample"></div>
+            <div class="lock"><span class="status-pill no" data-i18n="locked">Влез, за да го видиш</span></div>
+          </div>
+          <ul class="perks">
+            <li data-i18n="perk1">Влизаш само с QR кода</li>
+            <li data-i18n="perk2">Виждаш докога е абонаментът ти</li>
+            <li data-i18n="perk3">Следиш посещенията си</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= Member (logged in) ================= -->
+    <div id="member" class="stack hidden">
+      <div id="guest-banner" class="guest-banner hidden">
+        <span data-i18n="guest_banner">Разглеждаш като гост. Данните са примерни и не могат да се променят.</span>
+        <button id="guest-signup" class="btn sm" type="button" data-i18n="guest_signup">Създай свой профил</button>
+      </div>
+      <div class="panel acct-head">
+        <div class="avatar" id="p-avatar"></div>
+        <div class="grow">
+          <h1 id="p-name"></h1>
+          <div class="meta">
+            <span id="p-status" class="status-pill"></span>
+            <span class="hint" id="p-since"></span>
+          </div>
+        </div>
+        <button id="logout" class="btn ghost sm" data-i18n="logout">Изход</button>
+      </div>
+
+      <div class="cols">
+        <!-- Left column -->
+        <div class="stack">
+          <div class="panel">
+            <div class="card-title">
+              <span class="eyebrow" style="margin:0" data-i18n="sub_title">Абонамент</span>
+              <span class="hint"><span data-i18n="today_hours">Днес</span> <strong id="s-today" style="color:var(--text)"></strong></span>
+            </div>
+            <div class="sub-big" id="s-state"></div>
+            <p id="s-line" class="hint"></p>
+            <div class="bar"><i id="s-bar"></i></div>
+            <p class="hint" id="s-left"></p>
+            <div class="stats">
+              <div><div class="lbl" data-i18n="st_month">Този месец</div><div class="num" id="st-month">0</div></div>
+              <div><div class="lbl" data-i18n="st_total">Общо посещения</div><div class="num" id="st-total">0</div></div>
+              <div><div class="lbl" data-i18n="st_last">Последно</div><div class="num" id="st-last">—</div></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2 data-i18n="visits_title">Последни посещения</h2>
+            <ul class="visits" id="visits"></ul>
+          </div>
+        </div>
+
+        <!-- Right column -->
+        <div class="stack">
+          <div class="panel qr-card">
+            <h2 data-i18n="qr_title">Твоят QR код</h2>
+            <p class="hint" data-i18n="qr_hint">Покажи го на рецепцията при влизане.</p>
+            <div class="qr-box" id="qr"></div>
+            <div class="member-no" id="qr-no"></div>
+            <p class="hint" style="margin-top:8px" data-i18n="bright_hint">Увеличи яркостта на екрана, ако не се сканира.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings: details | security -->
+      <fieldset id="settings" class="panel settings">
+        <form id="details" class="form">
+          <h2 data-i18n="details_title">Лични данни</h2>
+          <label><span data-i18n="name">Име и фамилия</span><input name="name" autocomplete="name" required></label>
+          <label><span data-i18n="phone">Телефон</span><input name="phone" type="tel" autocomplete="tel" required></label>
+          <label><span data-i18n="email">Имейл</span><input name="email" type="email" disabled></label>
+          <p class="error" id="details-err"></p><p class="ok-msg" id="details-ok"></p>
+          <button class="btn" type="submit" data-i18n="save">Запази</button>
+        </form>
+
+        <div class="form">
+          <form id="password" class="form">
+            <h2 data-i18n="pw_title">Парола</h2>
+            <label><span data-i18n="pw_current">Сегашна парола</span><input name="current" type="password" autocomplete="current-password" required></label>
+            <label><span data-i18n="pw_new">Нова парола</span><input name="next" type="password" autocomplete="new-password" required></label>
+            <ul class="pw-rules" id="pw-rules"></ul>
+            <p class="error" id="password-err"></p><p class="ok-msg" id="password-ok"></p>
+            <button class="btn ghost" type="submit" data-i18n="pw_btn">Смени паролата</button>
+          </form>
+          <div class="divider"></div>
+          <p class="hint" data-i18n="reset_lead">Не помниш паролата? Ще ти изпратим линк по имейл.</p>
+          <div id="reset-sent" class="notice hidden"></div>
+          <button id="reset-btn" class="btn ghost" type="button" data-i18n="reset_btn">Нулирай паролата по имейл</button>
+        </div>
+      </fieldset>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© <span id="yr"></span> Classfit Varna</span>
+    <span data-i18n="addr">ул. „Студентска“ 1а, кв. Левски, 9010 Варна</span>
+  </div>
+</footer>
+
+<script src="nav.js"></script>
+<script>
+const T = {
+  bg: {
+    eyebrow:"Твоят профил", guest_title:"Здравей, госте.",
+    guest_lead:"Влез или създай профил, за да получиш своя QR код за рецепцията.",
+    tab_login:"Вход", tab_register:"Регистрация", forgot:"Забравена парола?",
+    or:"или", guest_btn:"Продължи като гост", guest_hint:"Разгледай примерен профил, без регистрация.",
+    guest_banner:"Разглеждаш като гост. Данните са примерни и не могат да се променят.", guest_signup:"Създай свой профил", guest_name:"Гост",
+    name:"Име и фамилия", email:"Имейл", phone:"Телефон", password:"Парола",
+    login_btn:"Влез", register_btn:"Създай профил", logout:"Изход",
+    locked:"Влез, за да го видиш", perk1:"Влизаш само с QR кода", perk2:"Виждаш докога е абонаментът ти", perk3:"Следиш посещенията си",
+    since:"Член от",
+    sub_title:"Абонамент", active:"Активен", inactive:"Няма активен абонамент",
+    until:"Валиден до", expired:"Изтекъл на", never:"Все още нямаш абонамент. Вземи го на рецепцията.",
+    days_left:"дни остават", day_left:"Последен ден днес",
+    today_hours:"Днес",
+    qr_title:"Твоят QR код", qr_hint:"Покажи го на рецепцията при влизане.",
+    bright_hint:"Увеличи яркостта на екрана, ако не се сканира.",
+    st_month:"Този месец", st_total:"Общо", st_last:"Последно",
+    visits_title:"Последни посещения", no_visits:"Още нямаш посещения. Ще се появят тук след първото сканиране.",
+    visit_ok:"С абонамент", visit_no:"Без абонамент",
+    details_title:"Лични данни", save:"Запази", saved:"Запазено.",
+    pw_title:"Парола", pw_current:"Сегашна парола", pw_new:"Нова парола", pw_btn:"Смени паролата", pw_changed:"Паролата е сменена.",
+    reset_lead:"Не помниш паролата? Ще ти изпратим линк по имейл.", reset_btn:"Нулирай паролата по имейл",
+    reset_sent:"Изпратихме имейл на {email} с линк за нова парола. Провери пощата си (и папка Спам). Линкът важи 60 минути.",
+    addr:"ул. „Студентска“ 1а, кв. Левски, 9010 Варна",
+    err_bad_login:"Грешен имейл или парола.", err_email_taken:"Вече има профил с този имейл.",
+    err_weak_password:"Паролата не отговаря на изискванията.", err_invalid_fields:"Провери полетата.",
+    err_bad_current:"Сегашната парола е грешна.", err_network:"Няма връзка със сървъра. Опитай пак."
+  },
+  en: {
+    eyebrow:"Your account", guest_title:"Hello, guest.",
+    guest_lead:"Log in or create an account to get your front desk QR code.",
+    tab_login:"Log in", tab_register:"Sign up", forgot:"Forgot password?",
+    or:"or", guest_btn:"Continue as guest", guest_hint:"Look around a sample account, no sign-up needed.",
+    guest_banner:"You're browsing as a guest. This is sample data and can't be changed.", guest_signup:"Create your own account", guest_name:"Guest",
+    name:"Full name", email:"Email", phone:"Phone", password:"Password",
+    login_btn:"Log in", register_btn:"Create account", logout:"Log out",
+    locked:"Log in to see it", perk1:"Get in with just your QR code", perk2:"See when your subscription ends", perk3:"Track your visits",
+    since:"Member since",
+    sub_title:"Subscription", active:"Active", inactive:"No active subscription",
+    until:"Valid until", expired:"Expired on", never:"You don't have a subscription yet. Get one at the front desk.",
+    days_left:"days left", day_left:"Last day today",
+    today_hours:"Today",
+    qr_title:"Your QR code", qr_hint:"Show it at the front desk when you come in.",
+    bright_hint:"Turn up your screen brightness if it doesn't scan.",
+    st_month:"This month", st_total:"Total", st_last:"Last visit",
+    visits_title:"Recent visits", no_visits:"No visits yet. They'll show up here after your first scan.",
+    visit_ok:"With subscription", visit_no:"No subscription",
+    details_title:"Your details", save:"Save", saved:"Saved.",
+    pw_title:"Password", pw_current:"Current password", pw_new:"New password", pw_btn:"Change password", pw_changed:"Password changed.",
+    reset_lead:"Forgot your password? We'll email you a link.", reset_btn:"Reset password by email",
+    reset_sent:"We sent an email to {email} with a link to set a new password. Check your inbox (and spam). The link works for 60 minutes.",
+    addr:"1a Studentska St, Levski, 9010 Varna",
+    err_bad_login:"Wrong email or password.", err_email_taken:"An account with this email already exists.",
+    err_weak_password:"Password doesn't meet the rules.", err_invalid_fields:"Check the fields.",
+    err_bad_current:"Current password is wrong.", err_network:"Can't reach the server. Try again."
+  }
+};
+const HOURS = ["07:00 – 21:00","07:00 – 21:00","07:00 – 21:00","07:00 – 21:00","07:00 – 21:00","08:00 – 21:00","08:00 – 21:00"];
+
+const $ = id => document.getElementById(id);
+let me = null, visits = null;
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c])); }
+function initials(name) { return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase(); }
+function fmtTime(at, withTime = true) {
+  const o = { day: "2-digit", month: "2-digit", year: "numeric" };
+  if (withTime) Object.assign(o, { hour: "2-digit", minute: "2-digit" });
+  return new Date(at.replace(" ", "T") + "Z").toLocaleString(LANG === "bg" ? "bg-BG" : "en-GB", o);
+}
+function qrSvg(text) {
+  const qr = qrcode(0, "M"); qr.addData(text); qr.make();
+  return qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
+}
+
+function render() {
+  if (!me) return;
+  const name = me.guest ? t("guest_name") : me.name;
+  $("p-avatar").textContent = initials(name);
+  $("p-name").textContent = name;
+  $("guest-banner").classList.toggle("hidden", !me.guest);
+  $("settings").disabled = !!me.guest;
+  const pill = $("p-status");
+  pill.className = "status-pill " + (me.active ? "ok" : "no");
+  pill.textContent = me.active ? t("active") : t("inactive");
+  $("p-since").textContent = `${t("since")} ${fmtDate(me.created_at.slice(0, 10))} · ${me.member_no}`;
+
+  const st = $("s-state");
+  st.className = "sub-big " + (me.active ? "ok" : "no");
+  st.textContent = me.active ? t("active") : t("inactive");
+  $("s-line").textContent = me.active ? `${t("until")} ${fmtDate(me.sub_until)}`
+    : me.sub_until ? `${t("expired")} ${fmtDate(me.sub_until)}` : t("never");
+  $("s-left").textContent = me.active ? (me.days_left === 1 ? t("day_left") : `${me.days_left} ${t("days_left")}`) : "";
+  $("s-left").classList.toggle("hidden", !me.active);
+  requestAnimationFrame(() => { $("s-bar").style.width = me.active ? Math.min(100, me.days_left / 30 * 100) + "%" : "0%"; });
+  $("s-today").textContent = HOURS[(new Date().getDay() + 6) % 7];
+
+  $("qr").innerHTML = qrSvg(me.member_no);
+  $("qr-no").textContent = me.member_no;
+
+  const f = $("details");
+  if (document.activeElement?.form !== f) { f.name.value = name; f.phone.value = me.phone; f.email.value = me.email; }
+
+  if (visits) {
+    $("st-month").textContent = visits.this_month;
+    $("st-total").textContent = visits.total;
+    $("st-last").textContent = visits.recent[0] ? fmtDate(new Date(visits.recent[0].at.replace(" ", "T") + "Z").toLocaleDateString("en-CA", { timeZone: "Europe/Sofia" })) : "—";
+    $("visits").innerHTML = visits.recent.length ? visits.recent.map(v =>
+      `<li><span>${esc(fmtTime(v.at))}</span><span class="hint">${t(v.active ? "visit_ok" : "visit_no")}</span></li>`).join("")
+      : `<li class="empty">${t("no_visits")}</li>`;
+  }
+}
+
+async function load() {
+  const r = await api("GET", "/api/me");
+  me = r.ok ? r.data : null;
+  visits = me ? (await api("GET", "/api/me/visits")).data : null;
+  $("guest").classList.toggle("hidden", !!me);
+  $("member").classList.toggle("hidden", !me);
+  (me ? $("member") : $("guest")).classList.add("fade-in");
+  render();
+  if (window.refreshNavProfile) refreshNavProfile();
+}
+
+// Tabs
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
+  $("login").classList.toggle("hidden", b.dataset.tab !== "login");
+  $("register").classList.toggle("hidden", b.dataset.tab !== "register");
+});
+
+// Live password rules
+const regOk = attachPwRules($("register").password, $("reg-rules"), () => $("register").email.value);
+const newOk = attachPwRules($("password").next, $("pw-rules"), () => me?.email || "");
+
+// Forms
+function wire(id, url, onOk, check) {
+  $(id).onsubmit = async e => {
+    e.preventDefault();
+    const err = $(id + "-err"), ok = $(id + "-ok");
+    err.textContent = ""; if (ok) ok.textContent = "";
+    if (check && !check()) { err.textContent = t("err_weak_password"); return; }
+    const btn = e.target.querySelector("button[type=submit]");
+    btn.disabled = true;
+    try {
+      const r = await api("POST", url, Object.fromEntries(new FormData(e.target)));
+      if (r.ok) await onOk(e.target, r.data, ok);
+      else err.textContent = t("err_" + (r.data?.error || "invalid_fields"));
+    } catch { err.textContent = t("err_network"); }
+    btn.disabled = false;
+  };
+}
+wire("login", "/api/login", async f => { f.reset(); await load(); });
+wire("register", "/api/register", async f => { f.reset(); await load(); }, regOk);
+wire("details", "/api/me/update", async (f, data, ok) => { me = data; f.querySelector("input").blur(); render(); refreshNavProfile(); ok.textContent = t("saved"); });
+wire("password", "/api/me/password", async (f, data, ok) => { f.reset(); f.next.dispatchEvent(new Event("input")); ok.textContent = t("pw_changed"); }, newOk);
+
+$("reset-btn").onclick = async () => {
+  const btn = $("reset-btn");
+  btn.disabled = true;
+  const r = await api("POST", "/api/me/reset-email");
+  if (r.ok) {
+    const n = $("reset-sent");
+    n.textContent = t("reset_sent").replace("{email}", r.data.email);
+    n.classList.remove("hidden");
+  }
+  btn.disabled = false;
+};
+
+$("logout").onclick = async () => { await api("POST", "/api/logout"); await load(); };
+$("guest-btn").onclick = async () => { await api("POST", "/api/guest"); await load(); scrollTo(0, 0); };
+$("guest-signup").onclick = async () => {
+  await api("POST", "/api/logout"); await load();
+  document.querySelector('.tabs button[data-tab="register"]').click();
+  $("register").name.focus();
+};
+$("yr").textContent = new Date().getFullYear();
+$("qr-sample").innerHTML = qrSvg("CF-000000");
+initLang(T, render);
+load();
+</script>
+</body>
+</html>

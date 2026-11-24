@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Треньор — Classfit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="i18n.js"></script>
+<script src="scanner.js"></script>
+<style>
+  .tr-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .tr-top h1 { font-size: clamp(1.6rem, 3.4vw, 2.2rem); letter-spacing: -.02em; }
+  .who { display: flex; align-items: center; gap: 10px; }
+  .who .input { width: 220px; padding: 10px 14px; }
+  .tr { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 20px; align-items: start; }
+  .tr > section { padding: 0; border: 0; }
+  .side { display: grid; gap: 20px; }
+  .cam { position: relative; aspect-ratio: 4/3; border-radius: 12px; overflow: hidden; background: #000; display: grid; place-items: center; color: #5d665f; font-size: .9rem; margin-bottom: 12px; }
+  .cam video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .cam .frame { position: absolute; inset: 20%; border: 3px solid var(--accent); border-radius: 14px; }
+  .scan-row .input { min-width: 0; }
+  .list { list-style: none; max-height: 420px; overflow-y: auto; margin: 12px -8px 0; }
+  .list li { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 10px; cursor: pointer; transition: background-color 120ms ease; }
+  .list li:hover { background: rgba(255,255,255,.04); }
+  .list li.sel { background: rgba(182,242,46,.1); }
+  .list .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .list .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .list .no { color: var(--muted); font-size: .8rem; }
+
+  .empty-state { text-align: center; padding: 80px 24px; color: var(--muted); }
+  .empty-state svg { width: 48px; height: 48px; color: #3a403c; margin-bottom: 12px; }
+  .m-head { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .avatar { width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--accent); color: var(--accent-ink); font: 800 1.25rem "Unbounded", sans-serif; }
+  .m-head h2 { font-size: 1.6rem; margin: 0 0 6px; letter-spacing: -.02em; }
+  .m-head .grow { flex: 1; min-width: 180px; }
+  .mark { margin-top: 24px; display: grid; gap: 12px; }
+  .mark .btn { width: 100%; justify-content: center; padding: 18px; font-size: 1.05rem; }
+  .mark .btn.done { background: rgba(182,242,46,.14); color: var(--accent); box-shadow: inset 0 0 0 1px rgba(182,242,46,.4); }
+  .m-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 24px; border-top: 1px solid var(--line); }
+  .m-stats > div { padding: 16px 0 0; }
+  .m-stats > div + div { padding-left: 18px; border-left: 1px solid var(--line); }
+  .m-stats .num { font: 800 1.4rem "Unbounded", sans-serif; margin-top: 4px; }
+  .m-stats .lbl { color: var(--muted); font-size: .85rem; }
+  .m-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; margin-top: 20px; }
+  textarea.input { min-height: 110px; resize: vertical; font: 400 .95rem/1.5 Inter, sans-serif; }
+  .vlist { list-style: none; margin-top: 8px; max-height: 420px; overflow-y: auto; }
+  .vlist li { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: .92rem; }
+  .vlist li:last-child { border-bottom: 0; }
+  .tag-src { font-size: .78rem; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,.06); color: var(--muted); white-space: nowrap; }
+  .tag-src.trainer { background: rgba(182,242,46,.1); color: var(--accent); }
+  .ok-msg { color: var(--accent); font-size: .9rem; }
+  .pop { animation: pop 450ms var(--ease-out); }
+  @keyframes pop { 0% { transform: scale(.97); } 60% { transform: scale(1.01); } 100% { transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .pop { animation: none; } }
+  @media (max-width: 1240px) { .m-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 960px) {
+    .tr, .m-grid { grid-template-columns: 1fr; }
+    .side { position: static; }
+    .list { max-height: 260px; }
+  }
+</style>
+</head>
+<body>
+
+<header id="site-header"></header>
+
+<main class="app-main">
+  <div class="wrap">
+    <div id="open-warn" class="warn-bar hidden" data-i18n="open_warn">Временно: страницата за треньори е отворена за всички без ПИН. Заключи я преди пускане.</div>
+
+    <div class="tr-top">
+      <div>
+        <span class="eyebrow" data-i18n="eyebrow">Треньор</span>
+        <h1 data-i18n="title">Клиенти и посещения</h1>
+      </div>
+      <label class="who"><span class="hint" data-i18n="who">Треньор:</span><input id="staff" class="input" data-i18n-ph="who_ph" placeholder="Твоето име" autocomplete="name"></label>
+    </div>
+
+    <div class="tr">
+      <!-- Left: scan + list -->
+      <aside class="side">
+        <div class="panel">
+          <h2 data-i18n="scan_title">Сканирай клиент</h2>
+          <div class="cam" style="margin-top:14px">
+            <video id="video" playsinline muted class="hidden"></video>
+            <div class="frame hidden" id="frame"></div>
+            <span id="cam-msg" data-i18n="cam_off">Камерата е изключена</span>
+          </div>
+          <button id="cam-btn" class="btn ghost" style="width:100%;margin-bottom:12px" data-i18n="cam_start">Включи камерата</button>
+          <form id="code-form" class="scan-row">
+            <input id="code" class="input" autocomplete="off" data-i18n-ph="code_ph" placeholder="Номер, телефон или имейл">
+            <button class="btn" type="submit" data-i18n="find">Намери</button>
+          </form>
+          <p class="error" id="code-err"></p>
+        </div>
+
+        <div class="panel">
+          <h2 data-i18n="list_title">Всички клиенти</h2>
+          <input id="search" class="input" style="margin-top:12px" data-i18n-ph="search_ph" placeholder="Търси по име или номер">
+          <ul class="list" id="list"></ul>
+        </div>
+      </aside>
+
+      <!-- Right: selected member -->
+      <section>
+        <div id="empty" class="panel empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2"/><path d="M8 12h8"/></svg>
+          <p data-i18n="empty">Сканирай QR код или избери клиент от списъка.</p>
+        </div>
+
+        <div id="member" class="hidden">
+          <div class="panel">
+            <div class="m-head">
+              <div class="avatar" id="m-avatar"></div>
+              <div class="grow">
+                <h2 id="m-name"></h2>
+                <span id="m-status" class="status-pill"></span>
+                <span class="hint" id="m-no" style="margin-left:8px"></span>
+              </div>
+            </div>
+            <div class="mark">
+              <div id="today-note" class="notice hidden"></div>
+              <button id="mark-btn" class="btn" type="button"></button>
+            </div>
+            <div class="m-stats">
+              <div><div class="lbl" data-i18n="st_month">Този месец</div><div class="num" id="m-month">0</div></div>
+              <div><div class="lbl" data-i18n="st_total">Общо</div><div class="num" id="m-total">0</div></div>
+              <div><div class="lbl" data-i18n="st_until">Абонамент до</div><div class="num" id="m-until">—</div></div>
+            </div>
+          </div>
+
+          <div class="m-grid">
+            <form id="edit" class="panel form">
+              <h2 data-i18n="edit_title">Данни на клиента</h2>
+              <label><span data-i18n="name">Име и фамилия</span><input name="name" required></label>
+              <label><span data-i18n="phone">Телефон</span><input name="phone" type="tel" required></label>
+              <label><span data-i18n="email">Имейл</span><input name="email" type="email" required></label>
+              <label><span data-i18n="notes">Бележки на треньора</span><textarea name="notes" class="input" data-i18n-ph="notes_ph" placeholder="Цели, травми, програма…"></textarea></label>
+              <p class="error" id="edit-err"></p><p class="ok-msg" id="edit-ok"></p>
+              <button class="btn" type="submit" data-i18n="save">Запази промените</button>
+            </form>
+
+            <div class="panel">
+              <h2 data-i18n="visits_title">Посещения</h2>
+              <ul class="vlist" id="visits"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script src="nav.js"></script>
+<script>
+const T = {
+  bg: {
+    open_warn:"Временно: страницата за треньори е отворена за всички без ПИН. Заключи я преди пускане.",
+    eyebrow:"Треньор", title:"Клиенти и посещения", who:"Треньор:", who_ph:"Твоето име",
+    scan_title:"Сканирай клиент", cam_off:"Камерата е изключена", cam_start:"Включи камерата", cam_stop:"Изключи камерата",
+    cam_denied:"Няма достъп до камерата.", code_ph:"Номер, телефон или имейл", find:"Намери", not_found:"Няма клиент с такъв номер.",
+    list_title:"Всички клиенти", search_ph:"Търси по име или номер", no_match:"Няма намерени.",
+    empty:"Сканирай QR код или избери клиент от списъка.",
+    active:"Активен абонамент", inactive:"Няма абонамент",
+    mark:"Отбележи посещение", marked:"✓ Посещението е отбелязано", mark_again:"Отбележи още едно посещение",
+    already:"Вече е отбелязан днес в {time} ({src}).",
+    src_desk:"рецепция", src_trainer:"треньор",
+    st_month:"Този месец", st_total:"Общо", st_until:"Абонамент до",
+    edit_title:"Данни на клиента", name:"Име и фамилия", phone:"Телефон", email:"Имейл",
+    notes:"Бележки на треньора", notes_ph:"Цели, травми, програма…", save:"Запази промените", saved:"Запазено.",
+    visits_title:"Посещения", no_visits:"Още няма посещения.",
+    err_invalid_fields:"Провери полетата.", err_email_taken:"Друг клиент вече ползва този имейл.", err_network:"Няма връзка със сървъра."
+  },
+  en: {
+    open_warn:"Temporary: the trainer page is open to everyone with no PIN. Lock it before going live.",
+    eyebrow:"Trainer", title:"Members and visits", who:"Trainer:", who_ph:"Your name",
+    scan_title:"Scan a member", cam_off:"Camera is off", cam_start:"Turn on camera", cam_stop:"Turn off camera",
+    cam_denied:"No access to the camera.", code_ph:"Member number, phone or email", find:"Find", not_found:"No member with that number.",
+    list_title:"All members", search_ph:"Search by name or number", no_match:"Nothing found.",
+    empty:"Scan a QR code or pick a member from the list.",
+    active:"Active subscription", inactive:"No subscription",
+    mark:"Mark visit", marked:"✓ Visit marked", mark_again:"Mark another visit",
+    already:"Already marked today at {time} ({src}).",
+    src_desk:"front desk", src_trainer:"trainer",
+    st_month:"This month", st_total:"Total", st_until:"Subscription until",
+    edit_title:"Member details", name:"Full name", phone:"Phone", email:"Email",
+    notes:"Trainer notes", notes_ph:"Goals, injuries, program…", save:"Save changes", saved:"Saved.",
+    visits_title:"Visits", no_visits:"No visits yet.",
+    err_invalid_fields:"Check the fields.", err_email_taken:"Another member already uses this email.", err_network:"Can't reach the server."
+  }
+};
+
+const $ = id => document.getElementById(id);
+let members = [], cur = null, justMarked = false;
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c])); }
+function initials(n) { return n.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase(); }
+function when(at, o) { return new Date(at.replace(" ", "T") + "Z").toLocaleString(LANG === "bg" ? "bg-BG" : "en-GB", o); }
+function beep(ok) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.frequency.value = ok ? 880 : 220; osc.type = ok ? "sine" : "square"; g.gain.value = 0.08;
+    osc.connect(g); g.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + (ok ? 0.15 : 0.4));
+  } catch {}
+}
+
+// Trainer name is remembered on this device.
+$("staff").value = localStorage.getItem("trainerName") || "";
+$("staff").addEventListener("input", () => localStorage.setItem("trainerName", $("staff").value.trim()));
+
+// ---- list ----
+async function loadList() {
+  const r = await api("GET", "/api/desk/members");
+  if (r.ok) { members = r.data; renderList(); }
+}
+function renderList() {
+  const q = $("search").value.trim().toLowerCase();
+  const rows = members.filter(m => !q || m.name.toLowerCase().includes(q) || m.member_no.toLowerCase().includes(q) || m.phone.includes(q));
+  $("list").innerHTML = rows.length ? rows.map(m => `
+    <li data-no="${esc(m.member_no)}" class="${cur && cur.member_no === m.member_no ? "sel" : ""}">
+      <span class="dot" style="background:${m.active ? "var(--accent)" : "#ff7a6b"}"></span>
+      <span class="nm">${esc(m.name)}</span><span class="no">${esc(m.member_no)}</span>
+    </li>`).join("") : `<li class="hint" style="cursor:default">${t("no_match")}</li>`;
+  $("list").querySelectorAll("li[data-no]").forEach(li => li.onclick = () => open(li.dataset.no));
+}
+$("search").addEventListener("input", renderList);
+
+// ---- member ----
+async function open(code, fromScan) {
+  $("code-err").textContent = "";
+  const r = await api("POST", "/api/staff/lookup", { code });
+  if (!r.ok) { $("code-err").textContent = t("not_found"); if (fromScan) beep(false); return; }
+  cur = r.data; justMarked = false;
+  if (fromScan) beep(cur.active);
+  render(true);
+  renderList();
+}
+
+function render(fresh) {
+  if (!cur) return;
+  $("empty").classList.add("hidden");
+  const box = $("member");
+  box.classList.remove("hidden");
+  if (fresh) { box.classList.remove("fade-in"); void box.offsetWidth; box.classList.add("fade-in"); }
+
+  $("m-avatar").textContent = initials(cur.name);
+  $("m-name").textContent = cur.name;
+  $("m-status").className = "status-pill " + (cur.active ? "ok" : "no");
+  $("m-status").textContent = cur.active ? t("active") : t("inactive");
+  $("m-no").textContent = `${cur.member_no} · ${cur.phone}`;
+  $("m-month").textContent = cur.visits_month;
+  $("m-total").textContent = cur.visits_total;
+  $("m-until").textContent = cur.sub_until ? fmtDate(cur.sub_until) : "—";
+
+  const v = cur.visited_today, note = $("today-note"), btn = $("mark-btn");
+  if (v && !justMarked) {
+    note.textContent = t("already").replace("{time}", when(v.at, { hour: "2-digit", minute: "2-digit" }))
+      .replace("{src}", v.source === "trainer" ? t("src_trainer") + (v.staff ? " " + v.staff : "") : t("src_desk"));
+    note.classList.remove("hidden");
+  } else note.classList.add("hidden");
+  btn.className = "btn" + (justMarked ? " done" : v ? " ghost" : "");
+  btn.textContent = justMarked ? t("marked") : v ? t("mark_again") : t("mark");
+
+  const f = $("edit");
+  if (fresh || document.activeElement?.form !== f) {
+    f.name.value = cur.name; f.phone.value = cur.phone; f.email.value = cur.email; f.notes.value = cur.notes;
+    $("edit-ok").textContent = ""; $("edit-err").textContent = "";
+  }
+
+  $("visits").innerHTML = cur.visits.length ? cur.visits.map(x => `
+    <li><span>${esc(when(x.at, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }))}</span>
+      <span class="tag-src ${x.source === "trainer" ? "trainer" : ""}">${x.source === "trainer" ? esc(t("src_trainer") + (x.staff ? " · " + x.staff : "")) : t("src_desk")}</span></li>`).join("")
+    : `<li class="hint">${t("no_visits")}</li>`;
+}
+
+$("mark-btn").onclick = async () => {
+  if (!cur || justMarked) return;
+  const btn = $("mark-btn");
+  btn.disabled = true;
+  const r = await api("POST", "/api/staff/visit", { member_no: cur.member_no, staff: $("staff").value.trim() });
+  btn.disabled = false;
+  if (r.ok) {
+    cur = r.data; justMarked = true; beep(true);
+    render(); btn.classList.remove("pop"); void btn.offsetWidth; btn.classList.add("pop");
+    loadList();
+  }
+};
+
+$("edit").onsubmit = async e => {
+  e.preventDefault();
+  $("edit-err").textContent = ""; $("edit-ok").textContent = "";
+  const body = { member_no: cur.member_no, ...Object.fromEntries(new FormData(e.target)) };
+  try {
+    const r = await api("POST", "/api/staff/update", body);
+    if (r.ok) { cur = r.data; render(true); $("edit-ok").textContent = t("saved"); loadList(); }
+    else $("edit-err").textContent = t("err_" + (r.data?.error || "invalid_fields"));
+  } catch { $("edit-err").textContent = t("err_network"); }
+};
+
+// ---- scanning ----
+$("code-form").onsubmit = e => { e.preventDefault(); const v = $("code").value; $("code").value = ""; open(v, true); };
+const scanner = createScanner({
+  video: $("video"),
+  onCode: code => open(code, true),
+  onState: st => {
+    const on = st === "on";
+    $("video").classList.toggle("hidden", !on); $("frame").classList.toggle("hidden", !on);
+    $("cam-msg").classList.toggle("hidden", on);
+    $("cam-msg").textContent = t(st === "denied" ? "cam_denied" : "cam_off");
+    $("cam-btn").dataset.i18n = on ? "cam_stop" : "cam_start";
+    $("cam-btn").textContent = t($("cam-btn").dataset.i18n);
+  },
+});
+$("cam-btn").onclick = () => scanner.toggle();
+
+initLang(T, () => { render(); renderList(); });
+api("GET", "/api/desk/me").then(r => {
+  $("open-warn").classList.toggle("hidden", !r.data?.open);
+  if (r.ok) loadList();
+  else location.href = "desk.html"; // staff log in on the front desk page
+});
+</script>
+</body>
+</html>

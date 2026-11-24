@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Рецепция — Classfit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="i18n.js"></script>
+</head>
+<body>
+
+<header id="site-header"></header>
+
+<main class="app-main">
+  <div class="wrap">
+
+    <!-- Staff PIN -->
+    <div id="pin-view" class="narrow hidden">
+      <span class="eyebrow" data-i18n="desk">Рецепция</span>
+      <h2 data-i18n="pin_title">Вход за персонала.</h2>
+      <form id="pin-form" class="form panel">
+        <label><span data-i18n="pin">ПИН код</span><input name="pin" type="password" inputmode="numeric" autocomplete="off" required autofocus></label>
+        <p class="error" id="pin-err"></p>
+        <button class="btn" type="submit" data-i18n="enter">Влез</button>
+      </form>
+    </div>
+
+    <div id="open-warn" class="warn-bar hidden" data-i18n="open_warn">Временно: рецепцията е отворена за всички без ПИН. Заключи я преди пускане.</div>
+
+    <!-- Scanner -->
+    <div id="desk-view" class="desk hidden">
+      <div class="panel">
+        <h2 data-i18n="scan_title">Сканирай QR код</h2>
+        <div class="video-wrap">
+          <video id="video" playsinline muted class="hidden"></video>
+          <div class="frame hidden" id="frame"></div>
+          <span id="cam-msg" data-i18n="cam_off">Камерата е изключена</span>
+        </div>
+        <button id="cam-btn" class="btn ghost" style="width:100%;margin-bottom:20px" data-i18n="cam_start">Включи камерата</button>
+        <form id="code-form" class="scan-row">
+          <input id="code" class="input" autocomplete="off" data-i18n-ph="code_ph" placeholder="Номер, телефон или имейл" autofocus>
+          <button class="btn" type="submit" data-i18n="check">Провери</button>
+        </form>
+        <p class="hint" style="margin-top:10px" data-i18n="scanner_hint">Ръчен скенер също работи: щракни в полето и сканирай.</p>
+      </div>
+
+      <div>
+        <div id="result" class="result">
+          <p class="hint" data-i18n="waiting">Чака сканиране…</p>
+        </div>
+        <div class="panel" style="margin-top:24px">
+          <h2 data-i18n="recent_title">Последни влизания</h2>
+          <ul class="recent" id="recent"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- All members -->
+    <div id="members-view" class="panel hidden" style="margin-top:24px">
+      <div class="members-head">
+        <h2 data-i18n="members_title">Всички клиенти</h2>
+        <span class="hint" id="m-count"></span>
+        <div class="filter">
+          <button data-f="all" class="on" data-i18n="f_all">Всички</button>
+          <button data-f="active" data-i18n="f_active">Активни</button>
+          <button data-f="inactive" data-i18n="f_inactive">Без абонамент</button>
+        </div>
+        <input id="m-search" class="input" style="max-width:280px" data-i18n-ph="m_search" placeholder="Търси име, номер, телефон">
+      </div>
+      <div class="table-wrap">
+        <table class="members">
+          <thead><tr>
+            <th data-i18n="th_name">Име</th><th data-i18n="th_no">Номер</th><th data-i18n="th_phone">Телефон</th>
+            <th data-i18n="th_email">Имейл</th><th data-i18n="th_status">Абонамент</th><th data-i18n="th_visits">Посещения</th><th data-i18n="th_last">Последно</th>
+          </tr></thead>
+          <tbody id="m-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script src="nav.js"></script>
+<script>
+const T = {
+  bg: {
+    desk:"Рецепция", logout:"Изход", pin_title:"Вход за персонала.", pin:"ПИН код", enter:"Влез",
+    bad_pin:"Грешен ПИН.", locked:"Твърде много опити. Изчакай 5 минути.",
+    scan_title:"Сканирай QR код", cam_off:"Камерата е изключена", cam_start:"Включи камерата", cam_stop:"Изключи камерата",
+    cam_denied:"Няма достъп до камерата.", code_ph:"Номер, телефон или имейл", check:"Провери",
+    scanner_hint:"Ръчен скенер също работи: щракни в полето и сканирай.",
+    waiting:"Чака сканиране…", active:"АКТИВЕН", inactive:"НЯМА АБОНАМЕНТ",
+    until:"Валиден до", expired:"Изтекъл на", never:"Никога не е имал абонамент",
+    days_left:"дни остават", today_last:"Последен ден днес",
+    add_day:"+1 ден", add_1m:"+1 месец", add_3m:"+3 месеца", add_12m:"+12 месеца", cancel:"Спри абонамента",
+    confirm_cancel:"Да спра ли абонамента на", not_found:"Няма член с такъв номер.",
+    recent_title:"Последни влизания", none_yet:"Още няма влизания.", network:"Няма връзка със сървъра.",
+    open_warn:"Временно: рецепцията е отворена за всички без ПИН. Заключи я преди пускане.",
+    members_title:"Всички клиенти", m_search:"Търси име, номер, телефон", f_all:"Всички", f_active:"Активни", f_inactive:"Без абонамент",
+    th_name:"Име", th_no:"Номер", th_phone:"Телефон", th_email:"Имейл", th_status:"Абонамент", th_visits:"Посещения", th_last:"Последно",
+    count:"клиента", none_match:"Няма намерени клиенти.", to_date:"до"
+  },
+  en: {
+    desk:"Front desk", logout:"Log out", pin_title:"Staff login.", pin:"PIN", enter:"Enter",
+    bad_pin:"Wrong PIN.", locked:"Too many tries. Wait 5 minutes.",
+    scan_title:"Scan a QR code", cam_off:"Camera is off", cam_start:"Turn on camera", cam_stop:"Turn off camera",
+    cam_denied:"No access to the camera.", code_ph:"Member number, phone or email", check:"Check",
+    scanner_hint:"A handheld scanner also works: click the field and scan.",
+    waiting:"Waiting for a scan…", active:"ACTIVE", inactive:"NO SUBSCRIPTION",
+    until:"Valid until", expired:"Expired on", never:"Never had a subscription",
+    days_left:"days left", today_last:"Last day today",
+    add_day:"+1 day", add_1m:"+1 month", add_3m:"+3 months", add_12m:"+12 months", cancel:"Stop subscription",
+    confirm_cancel:"Stop the subscription for", not_found:"No member with that number.",
+    recent_title:"Recent check-ins", none_yet:"No check-ins yet.", network:"Can't reach the server.",
+    open_warn:"Temporary: the front desk is open to everyone with no PIN. Lock it before going live.",
+    members_title:"All members", m_search:"Search name, number, phone", f_all:"All", f_active:"Active", f_inactive:"No subscription",
+    th_name:"Name", th_no:"Number", th_phone:"Phone", th_email:"Email", th_status:"Subscription", th_visits:"Visits", th_last:"Last visit",
+    count:"members", none_match:"No members found.", to_date:"until"
+  }
+};
+
+const $ = id => document.getElementById(id);
+let current = null;      // member shown in the result card
+let lastCode = "", lastAt = 0;
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c])); }
+
+function beep(ok) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.value = ok ? 880 : 220; o.type = ok ? "sine" : "square";
+    g.gain.value = 0.08; o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + (ok ? 0.15 : 0.4));
+  } catch {}
+}
+
+function renderResult(msg) {
+  const box = $("result");
+  if (msg) { box.className = "result no"; box.innerHTML = `<div class="big">${esc(msg)}</div>`; return; }
+  if (!current) { box.className = "result"; box.innerHTML = `<p class="hint">${t("waiting")}</p>`; return; }
+  const m = current;
+  let line;
+  if (m.active) line = m.days_left === 1 ? t("today_last") : `${t("until")} ${fmtDate(m.sub_until)} · ${m.days_left} ${t("days_left")}`;
+  else line = m.sub_until ? `${t("expired")} ${fmtDate(m.sub_until)}` : t("never");
+  box.className = "result " + (m.active ? "ok" : "no");
+  box.innerHTML = `
+    <div class="big">${m.active ? t("active") : t("inactive")}</div>
+    <div class="name">${esc(m.name)}</div>
+    <p class="hint">${esc(m.member_no)} · ${esc(m.phone)}</p>
+    <p style="margin-top:12px">${line}</p>
+    <div class="actions">
+      <button class="btn ghost" data-days="1">${t("add_day")}</button>
+      <button class="btn" data-months="1">${t("add_1m")}</button>
+      <button class="btn ghost" data-months="3">${t("add_3m")}</button>
+      <button class="btn ghost" data-months="12">${t("add_12m")}</button>
+      ${m.sub_until ? `<button class="btn ghost" data-cancel="1">${t("cancel")}</button>` : ""}
+    </div>`;
+  box.querySelectorAll("[data-days],[data-months]").forEach(b => b.onclick = async () => {
+    const r = await api("POST", "/api/desk/extend", { member_no: m.member_no, days: +b.dataset.days || 0, months: +b.dataset.months || 0 });
+    if (r.ok) { current = r.data; renderResult(); loadMembers(); }
+    $("code").focus();
+  });
+  const c = box.querySelector("[data-cancel]");
+  if (c) c.onclick = async () => {
+    if (!confirm(`${t("confirm_cancel")} ${m.name}?`)) return;
+    const r = await api("POST", "/api/desk/cancel", { member_no: m.member_no });
+    if (r.ok) { current = r.data; renderResult(); loadMembers(); }
+    $("code").focus();
+  };
+}
+
+async function loadRecent() {
+  const r = await api("GET", "/api/desk/recent");
+  if (!r.ok) return;
+  $("recent").innerHTML = r.data.length ? r.data.map(c => {
+    const time = new Date(c.at.replace(" ", "T") + "Z").toLocaleString(LANG === "bg" ? "bg-BG" : "en-GB", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+    return `<li><span><span class="dot" style="background:${c.active ? "var(--accent)" : "#ff7a6b"}"></span>${esc(c.name)} <span class="hint">${esc(c.member_no)}</span></span><span class="hint">${time}</span></li>`;
+  }).join("") : `<li class="hint">${t("none_yet")}</li>`;
+}
+
+async function check(code) {
+  code = code.trim();
+  if (!code) return;
+  // Ignore the same code read again within 4 seconds (camera sees it every frame).
+  if (code === lastCode && Date.now() - lastAt < 4000) return;
+  lastCode = code; lastAt = Date.now();
+  try {
+    const r = await api("POST", "/api/desk/check", { code });
+    if (r.status === 401) return showPin();
+    if (!r.ok) { current = null; beep(false); renderResult(t("not_found")); return; }
+    current = r.data; beep(current.active); renderResult(); loadRecent(); loadMembers();
+  } catch { renderResult(t("network")); }
+}
+
+$("code-form").onsubmit = e => { e.preventDefault(); lastCode = ""; check($("code").value); $("code").value = ""; };
+
+// ---- camera scanning ----
+let stream = null, timer = null;
+const canvas = document.createElement("canvas");
+const ctx2d = canvas.getContext("2d", { willReadFrequently: true });
+const detector = "BarcodeDetector" in window ? new BarcodeDetector({ formats: ["qr_code"] }) : null;
+
+async function scanFrame() {
+  const v = $("video");
+  if (!stream || v.readyState < 2) return;
+  try {
+    if (detector) {
+      const codes = await detector.detect(v);
+      if (codes[0]) return check(codes[0].rawValue);
+    } else if (window.jsQR) {
+      canvas.width = v.videoWidth; canvas.height = v.videoHeight;
+      ctx2d.drawImage(v, 0, 0);
+      const img = ctx2d.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(img.data, img.width, img.height, { inversionAttempts: "dontInvert" });
+      if (code) return check(code.data);
+    }
+  } catch {}
+}
+
+async function startCam() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    const v = $("video"); v.srcObject = stream; await v.play();
+    v.classList.remove("hidden"); $("frame").classList.remove("hidden"); $("cam-msg").classList.add("hidden");
+    $("cam-btn").textContent = t("cam_stop"); $("cam-btn").dataset.i18n = "cam_stop";
+    timer = setInterval(scanFrame, 250);
+  } catch {
+    stream = null; $("cam-msg").textContent = t("cam_denied");
+  }
+}
+
+function stopCam() {
+  clearInterval(timer);
+  if (stream) stream.getTracks().forEach(tr => tr.stop());
+  stream = null;
+  $("video").classList.add("hidden"); $("frame").classList.add("hidden");
+  $("cam-msg").classList.remove("hidden"); $("cam-msg").textContent = t("cam_off");
+  $("cam-btn").textContent = t("cam_start"); $("cam-btn").dataset.i18n = "cam_start";
+}
+
+$("cam-btn").onclick = () => stream ? stopCam() : startCam();
+
+// ---- staff login ----
+function showPin() {
+  stopCam();
+  $("pin-view").classList.remove("hidden"); $("desk-view").classList.add("hidden"); $("members-view").classList.add("hidden");
+  $("pin-form").pin.focus();
+}
+function showDesk() {
+  $("pin-view").classList.add("hidden"); $("desk-view").classList.remove("hidden"); $("members-view").classList.remove("hidden");
+  loadMembers();
+  loadRecent(); $("code").focus();
+}
+
+$("pin-form").onsubmit = async e => {
+  e.preventDefault();
+  const r = await api("POST", "/api/desk/login", { pin: e.target.pin.value });
+  e.target.reset();
+  if (r.ok) { $("pin-err").textContent = ""; showDesk(); }
+  else $("pin-err").textContent = t(r.data?.error || "bad_pin");
+};
+
+// ---- all members ----
+let members = [], filter = "all";
+async function loadMembers() {
+  const r = await api("GET", "/api/desk/members");
+  if (r.ok) { members = r.data; renderMembers(); }
+}
+function renderMembers() {
+  const q = $("m-search").value.trim().toLowerCase();
+  const qd = q.replace(/[^\d]/g, "");
+  const rows = members.filter(m =>
+    (filter === "all" || (filter === "active") === m.active) &&
+    (!q || m.name.toLowerCase().includes(q) || m.member_no.toLowerCase().includes(q) || m.email.includes(q) || (qd.length >= 3 && m.phone.includes(qd))));
+  $("m-count").textContent = rows.length + " " + t("count");
+  $("m-body").innerHTML = rows.length ? rows.map(m => `
+    <tr data-no="${esc(m.member_no)}" class="${current && current.member_no === m.member_no ? "sel" : ""}">
+      <td><strong>${esc(m.name)}</strong></td><td>${esc(m.member_no)}</td><td>${esc(m.phone)}</td><td>${esc(m.email)}</td>
+      <td><span class="status-pill ${m.active ? "ok" : "no"}">${m.active ? t("to_date") + " " + fmtDate(m.sub_until) : t("f_inactive")}</span></td>
+      <td>${m.visits}</td><td class="hint">${m.last_visit ? fmtDate(m.last_visit.slice(0, 10)) : "—"}</td>
+    </tr>`).join("") : `<tr><td colspan="7" class="hint" style="text-align:center;padding:28px">${t("none_match")}</td></tr>`;
+  $("m-body").querySelectorAll("tr[data-no]").forEach(tr => tr.onclick = () => {
+    current = members.find(m => m.member_no === tr.dataset.no);
+    renderResult(); renderMembers();
+    $("result").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+  });
+}
+$("m-search").addEventListener("input", renderMembers);
+document.querySelectorAll(".filter button").forEach(b => b.onclick = () => {
+  filter = b.dataset.f;
+  document.querySelectorAll(".filter button").forEach(x => x.classList.toggle("on", x === b));
+  renderMembers();
+});
+
+initLang(T, () => { renderResult(); loadRecent(); if (members.length) renderMembers(); });
+api("GET", "/api/desk/me").then(r => {
+  $("open-warn").classList.toggle("hidden", !r.data?.open);
+  r.ok ? showDesk() : showPin();
+});
+</script>
+</body>
+</html>
