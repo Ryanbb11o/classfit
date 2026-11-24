@@ -34,6 +34,14 @@ Then open:
 - http://localhost:3000/trainer.html – trainers: scan or pick a member, mark a visit, edit details and notes
 - http://localhost:3000/reset.html – forgot password
 
+## Live site (Vercel)
+
+Live at **https://classfit-wine.vercel.app**. Every push to `main` on GitHub deploys automatically.
+
+- Vercel serves the pages from `public/`. The API in `server.js` runs as a Vercel function (`api/index.js`); `vercel.json` sends `/api/*` and `/config.js` to it.
+- The same five settings as `.env` are set in the Vercel project (Settings → Environment Variables): `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `COOKIE_SECRET`, `STAFF_PIN`. After changing one, redeploy (Deployments → Redeploy).
+- If the site moves to its own domain, add it in Vercel, then set it as the Supabase Site URL and redirect URL (`supabase/config.jsonc`, then `npx.cmd supabase config push`).
+
 ## How it fits together
 
 - **Logins** use Supabase Auth in the browser (`supabase-js`). Pages send the member's login token to this server, which checks it with Supabase.
@@ -47,7 +55,7 @@ Then open:
 The front desk and trainer pages need the employee PIN, set in `.env`:
 
 ```
-STAFF_PIN=123456
+STAFF_PIN=your-pin
 ```
 
 - Staff enter it once on a device; it stays valid for 12 hours. Opening the trainer page asks for the PIN and then returns there.
